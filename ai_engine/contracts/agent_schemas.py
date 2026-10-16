@@ -44,3 +44,34 @@ class TriggeredRuleInfo(BaseModel):
     reason: str
     condition_matched: str
     override_applied: bool = False
+
+class ExecutionTrace(BaseModel):
+    agent_id: str
+    agent_type: AgentType
+    step: str
+    status: str
+    execution_time_ms: float
+    timestamp: str
+    details: Dict[str, Any] = Field(default_factory=dict)
+
+class AgentRequest(BaseModel):
+    request_id: str
+    execution_id: str
+    task_type: str
+    input_data: Dict[str, Any]
+    session_id: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+
+class AgentResponse(BaseModel):
+    request_id: str
+    execution_id: str
+    agent_id: str
+    agent_type: AgentType
+    status: str
+    output: Dict[str, Any] = Field(default_factory=dict)
+    confidence: float = 1.0
+    evidence: List[Dict[str, Any]] = Field(default_factory=list)
+    warnings: List[str] = Field(default_factory=list)
+    errors: List[str] = Field(default_factory=list)
+    execution_time_ms: float = 0.0
+    timestamp: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
