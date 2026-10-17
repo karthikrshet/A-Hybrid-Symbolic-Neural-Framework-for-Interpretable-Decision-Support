@@ -30,3 +30,19 @@ class Message(Base):
     metadata_json = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     conversation = relationship("Conversation", back_populates="messages")
+
+class DecisionRecord(Base):
+    __tablename__ = "decision_records"
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    correlation_id = Column(String, index=True, nullable=False)
+    input_payload = Column(Text, nullable=False)
+    final_decision = Column(String, nullable=False)
+    confidence_score = Column(Float, nullable=False)
+    neural_score = Column(Float, nullable=False)
+    symbolic_rules_triggered = Column(Text, nullable=True)
+    rule_override = Column(Boolean, default=False)
+    human_review_required = Column(Boolean, default=False)
+    explanation_summary = Column(Text, nullable=False)
+    execution_trace_json = Column(Text, nullable=True)
+    latency_ms = Column(Float, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
