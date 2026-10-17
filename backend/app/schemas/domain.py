@@ -20,3 +20,19 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserResponse
+
+class TransactionInput(BaseModel):
+    transaction_amount: float = Field(..., gt=0, description="Amount in USD/INR")
+    transaction_frequency_24h: int = Field(default=1, ge=0)
+    velocity_change_ratio: float = Field(default=1.0, ge=0.0)
+    location_distance_km: float = Field(default=5.0, ge=0.0)
+    hour_of_day: int = Field(default=14, ge=0, le=23)
+    is_weekend: bool = False
+    is_sanctioned_destination: bool = False
+    kyc_status: str = Field(default="VERIFIED", description="'VERIFIED', 'INCOMPLETE', 'PENDING'")
+    foreign_exchange_risk: float = Field(default=0.1, ge=0.0, le=1.0)
+    ip_reputation_score: float = Field(default=0.95, ge=0.0, le=1.0)
+    device_trust_score: float = Field(default=0.90, ge=0.0, le=1.0)
+    user_failed_attempts_1h: int = Field(default=0, ge=0)
+    past_chargeback_count: int = Field(default=0, ge=0)
+    channel_type: str = Field(default="MOBILE", description="'WEB', 'MOBILE', 'ATM', 'API'")
