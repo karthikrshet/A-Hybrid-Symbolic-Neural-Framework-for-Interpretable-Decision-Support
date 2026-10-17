@@ -36,3 +36,28 @@ class TransactionInput(BaseModel):
     user_failed_attempts_1h: int = Field(default=0, ge=0)
     past_chargeback_count: int = Field(default=0, ge=0)
     channel_type: str = Field(default="MOBILE", description="'WEB', 'MOBILE', 'ATM', 'API'")
+
+class DecisionResponse(BaseModel):
+    decision_id: str
+    correlation_id: str
+    final_decision: str
+    confidence_score: float
+    requires_human_review: bool
+    neural_analysis: Dict[str, Any]
+    symbolic_analysis: Dict[str, Any]
+    validation_status: str
+    explanation: Dict[str, Any]
+    execution_trace: List[Dict[str, Any]]
+    latency_ms: float
+
+class ChatMessageRequest(BaseModel):
+    message: str
+    conversation_id: Optional[str] = None
+    structured_context: Optional[Dict[str, Any]] = None
+
+class ChatMessageResponse(BaseModel):
+    conversation_id: str
+    reply: str
+    workflow_state: str
+    decision: Optional[Dict[str, Any]] = None
+    agent_traces: List[Dict[str, Any]] = Field(default_factory=list)
