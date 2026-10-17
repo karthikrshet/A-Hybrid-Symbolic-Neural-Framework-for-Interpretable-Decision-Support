@@ -46,3 +46,28 @@ class DecisionRecord(Base):
     execution_trace_json = Column(Text, nullable=True)
     latency_ms = Column(Float, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+class SymbolicRuleModel(Base):
+    __tablename__ = "symbolic_rules"
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    rule_id = Column(String, unique=True, index=True, nullable=False)
+    name = Column(String, nullable=False)
+    description = Column(Text, nullable=False)
+    category = Column(String, nullable=False)
+    severity = Column(String, nullable=False)
+    is_hard_constraint = Column(Boolean, default=False)
+    conditions_json = Column(Text, nullable=False)
+    actions_json = Column(Text, nullable=False)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class AuditLogEntry(Base):
+    __tablename__ = "audit_logs"
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    entity_type = Column(String, nullable=False)
+    entity_id = Column(String, nullable=False)
+    action = Column(String, nullable=False)
+    actor = Column(String, nullable=False)
+    payload_hash = Column(String, nullable=False)
+    prev_hash = Column(String, nullable=True)
+    timestamp = Column(DateTime, default=datetime.utcnow)
