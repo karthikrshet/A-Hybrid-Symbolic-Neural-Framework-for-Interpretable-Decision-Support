@@ -1,0 +1,141 @@
+[
+  {
+    "rule_id": "RULE-AML-001",
+    "name": "Sanctioned Jurisdiction Destination",
+    "description": "Strict prohibition of financial transfers to designated sanctioned sovereign jurisdictions.",
+    "category": "SANCTIONS_COMPLIANCE",
+    "severity": "CRITICAL_HARD_OVERRIDE",
+    "is_hard_override": true,
+    "conditions": {
+      "is_sanctioned_destination": {
+        "eq": true
+      }
+    },
+    "action": "FORCE_REJECT",
+    "regulatory_reference": "OFAC / FATF Special Recommendation III"
+  },
+  {
+    "rule_id": "RULE-AML-002",
+    "name": "High Value Transfer with Incomplete KYC",
+    "description": "Transactions over $10,000 require complete verified tier-3 KYC documentation.",
+    "category": "KYC_COMPLIANCE",
+    "severity": "CRITICAL_HARD_OVERRIDE",
+    "is_hard_override": true,
+    "conditions": {
+      "transaction_amount": {
+        "gte": 10000.0
+      },
+      "kyc_status": {
+        "eq": "INCOMPLETE"
+      }
+    },
+    "action": "FORCE_REJECT",
+    "regulatory_reference": "FinCEN CDD Rule (31 CFR \u00a7 1010.230)"
+  },
+  {
+    "rule_id": "RULE-VEL-003",
+    "name": "Impossible Geographic Velocity",
+    "description": "Transactions occurring at distance > 800km within under 1 hour represent physical impossibility.",
+    "category": "GEO_VELOCITY",
+    "severity": "CRITICAL_HARD_OVERRIDE",
+    "is_hard_override": true,
+    "conditions": {
+      "location_distance_km": {
+        "gte": 800.0
+      },
+      "velocity_change_ratio": {
+        "gte": 4.0
+      }
+    },
+    "action": "FORCE_REJECT",
+    "regulatory_reference": "Basel Committee Fraud Pattern Benchmark"
+  },
+  {
+    "rule_id": "RULE-AUTH-004",
+    "name": "Multiple Consecutive Authentication Failures",
+    "description": "Accounts experiencing repeated credential failures prior to transaction transfer.",
+    "category": "CREDENTIAL_SECURITY",
+    "severity": "CRITICAL_HARD_OVERRIDE",
+    "is_hard_override": true,
+    "conditions": {
+      "user_failed_attempts_1h": {
+        "gte": 5
+      }
+    },
+    "action": "FORCE_REJECT",
+    "regulatory_reference": "NIST SP 800-63B Authentication Guideline"
+  },
+  {
+    "rule_id": "RULE-RISK-005",
+    "name": "Abnormal Velocity Spike with Compromised IP",
+    "description": "Rapid acceleration in transaction velocity coupled with low external IP reputation.",
+    "category": "FRAUD_HEURISTIC",
+    "severity": "HIGH_RISK_SOFT",
+    "is_hard_override": false,
+    "conditions": {
+      "velocity_change_ratio": {
+        "gte": 3.0
+      },
+      "ip_reputation_score": {
+        "lte": 0.4
+      }
+    },
+    "action": "FLAG_SUSPICIOUS",
+    "regulatory_reference": "EBA Guidelines on ICT and Security Risk"
+  },
+  {
+    "rule_id": "RULE-RISK-006",
+    "name": "Off-Hours High Amount Anomaly",
+    "description": "Substantial fund transfers conducted during nocturnal hours (01:00 - 05:00).",
+    "category": "BEHAVIORAL_ANOMALY",
+    "severity": "MEDIUM_RISK_SOFT",
+    "is_hard_override": false,
+    "conditions": {
+      "transaction_amount": {
+        "gte": 5000.0
+      },
+      "hour_of_day": {
+        "gte": 1,
+        "lte": 5
+      }
+    },
+    "action": "FLAG_MONITOR",
+    "regulatory_reference": "Internal Anti-Fraud Policy v4.2"
+  },
+  {
+    "rule_id": "RULE-RISK-007",
+    "name": "Excessive Chargeback History",
+    "description": "Accounts having history of 3 or more disputed chargebacks within past 90 days.",
+    "category": "ACCOUNT_REPUTATION",
+    "severity": "HIGH_RISK_SOFT",
+    "is_hard_override": false,
+    "conditions": {
+      "past_chargeback_count": {
+        "gte": 3
+      }
+    },
+    "action": "FLAG_SUSPICIOUS",
+    "regulatory_reference": "Payment Card Industry Risk Thresholds"
+  },
+  {
+    "rule_id": "RULE-CLEAR-008",
+    "name": "Trusted Domestic Low-Risk Transaction",
+    "description": "Verified KYC customer with pristine device trust and normal historical parameters.",
+    "category": "FAST_TRACK_CLEARANCE",
+    "severity": "LOW_RISK_CLEARANCE",
+    "is_hard_override": false,
+    "conditions": {
+      "transaction_amount": {
+        "lte": 500.0
+      },
+      "device_trust_score": {
+        "gte": 0.9
+      },
+      "user_failed_attempts_1h": {
+        "eq": 0
+      }
+    },
+    "action": "CLEAR_LOW_RISK",
+    "regulatory_reference": "Standard Operations Protocol"
+  }
+]
