@@ -34,3 +34,9 @@ def validate_device_trust(score: float) -> bool:
     if not (0.0 <= score <= 1.0):
         raise ValueError(f"Device trust score must be in [0.0, 1.0], got {score}")
     return True
+
+def validate_hour_of_day(hour: int) -> bool:
+    """Validate hour is within standard diurnal cycle [0, 23]."""
+    if not (0 <= hour <= 23):
+        raise ValueError(f"Hour must be in [0, 23], got {hour}")
+    return True
