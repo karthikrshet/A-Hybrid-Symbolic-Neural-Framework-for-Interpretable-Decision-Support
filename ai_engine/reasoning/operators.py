@@ -18,3 +18,7 @@ def op_set_contains(container: Union[List, Set], item: Any) -> bool:
 def op_subset(subset: List, superset: List) -> bool:
     """Check if collection is subset of target."""
     return set(subset).issubset(set(superset))
+
+def op_fuzzy_near(val: float, target: float, tolerance: float = 0.05) -> bool:
+    """Check if value is within relative tolerance of target."""
+    return abs(val - target) <= (tolerance * abs(target))
