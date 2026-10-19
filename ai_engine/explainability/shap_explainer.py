@@ -1,44 +1,70 @@
 import numpy as np
 import pandas as pd
-from typing import List, Dict, Any
+import shap
+from typing import List, Dict, Any, Optional
 
 class ModelExplainer:
-    def __init__(self, feature_names: List[str]):
+    def __init__(self, feature_names: List[str], base_model: Optional[Any] = None):
         self.feature_names = feature_names
+        self.explainer = None
+        if base_model is not None:
+            self.set_model(base_model)
 
-    def explain_instance(self, raw_features: Dict[str, Any], risk_score: float) -> List[Dict[str, Any]]:
-        # Calculate feature contributions relative to risk score
+    def set_model(self, base_model: Any):
+        try:
+            # Handle CalibratedClassifierCV
+            if hasattr(base_model, "calibrated_classifiers_"):
+                rf_estimator = base_model.calibrated_classifiers_[0].estimator
+            else:
+                rf_estimator = base_model
+            self.explainer = shap.TreeExplainer(rf_estimator)
+        except Exception as e:
+            print(f"Warning: TreeExplainer fallback: {e}")
+            self.explainer = None
+
+    def explain_instance(self, scaled_df: pd.DataFrame, raw_features: Dict[str, Any]) -> List[Dict[str, Any]]:
         attributions = []
-        
-        # High impact feature weights
-        amount = raw_features.get("transaction_amount", 100.0)
-        freq = raw_features.get("transaction_frequency_24h", 1)
-        velocity = raw_features.get("velocity_change_ratio", 1.0)
-        sanctioned = raw_features.get("is_sanctioned_destination", False)
-        ip_rep = raw_features.get("ip_reputation_score", 0.95)
-        dev_trust = raw_features.get("device_trust_score", 0.90)
-        failed = raw_features.get("user_failed_attempts_1h", 0)
-        chargeback = raw_features.get("past_chargeback_count", 0)
-        
-        scores = {
-            "transaction_amount": (amount - 200.0) / 1000.0 * 0.25,
-            "transaction_frequency_24h": (freq - 2) * 0.08,
-            "velocity_change_ratio": (velocity - 1.0) * 0.15,
-            "is_sanctioned_destination": 0.85 if sanctioned else 0.0,
-            "ip_reputation_score": (0.85 - ip_rep) * 0.35,
-            "device_trust_score": (0.80 - dev_trust) * 0.30,
-            "user_failed_attempts_1h": failed * 0.18,
-            "past_chargeback_count": chargeback * 0.35
-        }
-        
-        sorted_feats = sorted(scores.items(), key=lambda x: abs(x[1]), reverse=True)
-        for rank, (name, attr_val) in enumerate(sorted_feats, 1):
+        if self.explainer is not None:
+            try:
+                shap_vals = self.explainer.shap_values(scaled_df)
+                # For binary classification: class 1 (fraud)
+                if isinstance(shap_vals, np.ndarray) and len(shap_vals.shape) == 3:
+                    class1_shap = shap_vals[0, :, 1]
+                elif isinstance(shap_vals, list) and len(shap_vals) > 1:
+                    class1_shap = shap_vals[1][0]
+                else:
+                    class1_shap = shap_vals[0]
+
+                # Pair with feature names
+                scored = []
+                for idx, feat_name in enumerate(self.feature_names):
+                    score = float(class1_shap[idx])
+                    raw_val = raw_features.get(feat_name, 0)
+                    scored.append((feat_name, raw_val, score))
+
+                # Sort by absolute attribution magnitude
+                scored.sort(key=lambda x: abs(x[2]), reverse=True)
+
+                for rank, (name, val, score) in enumerate(scored, 1):
+                    attributions.append({
+                        "feature_name": name,
+                        "feature_value": val,
+                        "attribution_score": float(np.round(score, 4)),
+                        "importance_rank": rank,
+                        "direction": "increases_risk" if score > 0 else "decreases_risk"
+                    })
+                return attributions
+            except Exception as ex:
+                print(f"SHAP explanation computation error: {ex}")
+
+        # Fallback to normalized feature ranking if explainer fails
+        for rank, name in enumerate(self.feature_names, 1):
+            val = raw_features.get(name, 0)
             attributions.append({
                 "feature_name": name,
-                "feature_value": raw_features.get(name, 0),
-                "attribution_score": float(np.round(attr_val, 4)),
+                "feature_value": val,
+                "attribution_score": 0.0,
                 "importance_rank": rank,
-                "direction": "increases_risk" if attr_val > 0 else "decreases_risk"
+                "direction": "neutral"
             })
-            
         return attributions

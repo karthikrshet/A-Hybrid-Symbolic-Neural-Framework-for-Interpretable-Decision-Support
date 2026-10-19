@@ -20,7 +20,7 @@ class SymbolicReasoningAgent:
             status="SUCCESS",
             confidence=1.0 if has_override else 0.85,
             output={
-                "triggered_rules": [r.dict() for r in triggered_rules],
+                "triggered_rules": [r.model_dump() for r in triggered_rules],
                 "has_hard_override": has_override,
                 "primary_action": primary_action,
                 "rules_evaluated_count": len(rule_engine.rules)

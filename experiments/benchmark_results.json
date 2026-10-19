@@ -1,0 +1,36 @@
+{
+  "experiment_name": "Conventional Neural Baseline vs. Proposed Hybrid Symbolic-Neural Framework",
+  "sample_size": 500,
+  "timestamp": "2026-11-01T00:28:43Z",
+  "baseline_neural_only": {
+    "accuracy": 0.822,
+    "precision": 0.6944444444444444,
+    "recall": 0.42735042735042733,
+    "f1_score": 0.5291005291005291,
+    "pr_auc": 0.5929074312090231,
+    "mean_latency_ms": 63.08248853683472,
+    "rule_consistency_rate": 0.685,
+    "decision_stability": 0.88,
+    "interpretability_score": 0.42
+  },
+  "hybrid_symbolic_neural": {
+    "accuracy": 0.824,
+    "precision": 0.7457627118644068,
+    "recall": 0.37606837606837606,
+    "f1_score": 0.5,
+    "pr_auc": 0.5929074312090231,
+    "mean_latency_ms": 66.12664127349854,
+    "rule_consistency_rate": 1.0,
+    "decision_stability": 0.965,
+    "interpretability_score": 0.94,
+    "rule_override_count": 6,
+    "human_review_count": 99
+  },
+  "delta_improvements": {
+    "precision_gain": 0.05131826741996237,
+    "recall_gain": -0.051282051282051266,
+    "f1_gain": -0.02910052910052907,
+    "rule_consistency_gain": 0.31499999999999995,
+    "interpretability_gain": 0.52
+  }
+}

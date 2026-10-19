@@ -13,7 +13,7 @@ def test_rules(facts: dict):
     triggered, has_override, primary_action = rule_engine.evaluate(facts)
     return {
         "triggered_count": len(triggered),
-        "triggered_rules": [r.dict() for r in triggered],
+        "triggered_rules": [r.model_dump() for r in triggered],
         "has_hard_override": has_override,
         "primary_action": primary_action
     }

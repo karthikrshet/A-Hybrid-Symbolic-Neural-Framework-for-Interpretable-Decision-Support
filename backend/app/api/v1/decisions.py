@@ -11,7 +11,7 @@ router = APIRouter(prefix="/decisions", tags=["Decisions"])
 
 @router.post("/analyze", response_model=DecisionResponse)
 async def analyze_transaction(tx_input: TransactionInput, db: Session = Depends(get_db)):
-    data = tx_input.dict()
+    data = tx_input.model_dump()
     result = await coordinator.execute_decision_pipeline(data)
     
     # Persist DecisionRecord

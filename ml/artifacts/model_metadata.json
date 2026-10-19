@@ -1,0 +1,30 @@
+{
+  "model_version": "1.0.0-rf-calibrated",
+  "algorithm": "RandomForestClassifier + PlattSigmoidCalibration",
+  "features": [
+    "transaction_amount",
+    "transaction_frequency_24h",
+    "velocity_change_ratio",
+    "location_distance_km",
+    "hour_of_day",
+    "is_weekend",
+    "is_sanctioned_destination",
+    "kyc_incomplete",
+    "foreign_exchange_risk",
+    "ip_reputation_score",
+    "device_trust_score",
+    "user_failed_attempts_1h",
+    "past_chargeback_count"
+  ],
+  "metrics": {
+    "accuracy": 0.8266666666666667,
+    "precision": 0.6190476190476191,
+    "recall": 0.4875,
+    "f1_score": 0.5454545454545454,
+    "roc_auc": 0.838273305084746,
+    "pr_auc": 0.6053934394089112,
+    "test_samples": 1500,
+    "test_fraud_rate": 0.21333333333333335
+  },
+  "training_samples": 4500
+}

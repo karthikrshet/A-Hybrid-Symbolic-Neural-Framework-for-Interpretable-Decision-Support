@@ -7,7 +7,7 @@ class RuleEngine:
     def __init__(self, rules_filepath: str = None):
         if not rules_filepath:
             rules_filepath = os.path.abspath(os.path.join(
-                os.path.dirname(__file__), "../../../knowledge_base/rules/financial_risk_rules.json"
+                os.path.dirname(__file__), "../../knowledge_base/rules/financial_risk_rules.json"
             ))
         self.rules_filepath = rules_filepath
         self.rules = []

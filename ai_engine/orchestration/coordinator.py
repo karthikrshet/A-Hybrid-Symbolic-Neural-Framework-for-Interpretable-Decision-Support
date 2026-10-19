@@ -122,7 +122,7 @@ class CoordinatorAgent:
             "symbolic_analysis": symbolic_res.output,
             "validation_status": validation_res.output.get("validation_status", "VALID"),
             "explanation": expl_res.output,
-            "execution_trace": [t.dict() for t in traces],
+            "execution_trace": [t.model_dump() for t in traces],
             "latency_ms": float(total_latency)
         }
 
