@@ -14,3 +14,7 @@ def op_regex(val: str, pattern: str) -> bool:
 def op_set_contains(container: Union[List, Set], item: Any) -> bool:
     """Check set membership."""
     return item in container
+
+def op_subset(subset: List, superset: List) -> bool:
+    """Check if collection is subset of target."""
+    return set(subset).issubset(set(superset))
