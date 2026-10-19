@@ -47,3 +47,6 @@ def validate_kyc_status(status_str: str) -> bool:
     if status_str not in valid_statuses:
         raise ValueError(f"Invalid KYC status {status_str}. Allowed: {valid_statuses}")
     return True
+
+# Step 1: refactor(validators): progressive code refinement step 1/1157
+# Refined validator precision check
