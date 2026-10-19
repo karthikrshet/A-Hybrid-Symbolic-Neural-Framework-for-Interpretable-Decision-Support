@@ -28,3 +28,9 @@ def validate_ip_reputation(score: float) -> bool:
     if not (0.0 <= score <= 1.0):
         raise ValueError(f"IP reputation score must be in [0.0, 1.0], got {score}")
     return True
+
+def validate_device_trust(score: float) -> bool:
+    """Validate device trust bounded between 0.0 and 1.0."""
+    if not (0.0 <= score <= 1.0):
+        raise ValueError(f"Device trust score must be in [0.0, 1.0], got {score}")
+    return True
