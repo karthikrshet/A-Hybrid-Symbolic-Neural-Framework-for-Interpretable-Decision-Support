@@ -16,3 +16,9 @@ def validate_velocity_change(ratio: float) -> bool:
     if ratio < 0 or math.isnan(ratio):
         raise ValueError("Velocity change ratio cannot be negative")
     return True
+
+def validate_geographic_distance(dist_km: float) -> bool:
+    """Ensure geographic distance is physically valid on Earth surface (<= 20,015 km)."""
+    if dist_km < 0 or dist_km > 20015.0:
+        raise ValueError("Geographic distance must be between 0 and 20,015 km")
+    return True
