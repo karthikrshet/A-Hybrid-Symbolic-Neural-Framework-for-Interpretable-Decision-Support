@@ -10,3 +10,7 @@ def op_between(val: float, bounds: List[float]) -> bool:
 def op_regex(val: str, pattern: str) -> bool:
     """Check if string matches regex pattern."""
     return bool(re.search(pattern, str(val)))
+
+def op_set_contains(container: Union[List, Set], item: Any) -> bool:
+    """Check set membership."""
+    return item in container
