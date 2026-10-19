@@ -40,3 +40,10 @@ def validate_hour_of_day(hour: int) -> bool:
     if not (0 <= hour <= 23):
         raise ValueError(f"Hour must be in [0, 23], got {hour}")
     return True
+
+def validate_kyc_status(status_str: str) -> bool:
+    """Ensure KYC status adheres to authorized enumeration."""
+    valid_statuses = {"VERIFIED", "INCOMPLETE", "PENDING", "REJECTED"}
+    if status_str not in valid_statuses:
+        raise ValueError(f"Invalid KYC status {status_str}. Allowed: {valid_statuses}")
+    return True
