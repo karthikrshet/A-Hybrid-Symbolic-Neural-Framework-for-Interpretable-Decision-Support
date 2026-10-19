@@ -22,3 +22,9 @@ def validate_geographic_distance(dist_km: float) -> bool:
     if dist_km < 0 or dist_km > 20015.0:
         raise ValueError("Geographic distance must be between 0 and 20,015 km")
     return True
+
+def validate_ip_reputation(score: float) -> bool:
+    """Validate IP reputation bounded between 0.0 and 1.0."""
+    if not (0.0 <= score <= 1.0):
+        raise ValueError(f"IP reputation score must be in [0.0, 1.0], got {score}")
+    return True
