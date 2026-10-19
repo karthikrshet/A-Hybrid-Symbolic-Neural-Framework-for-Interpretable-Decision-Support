@@ -8,3 +8,31 @@ class CircuitState(str, Enum):
     CLOSED = "CLOSED"
     OPEN = "OPEN"
     HALF_OPEN = "HALF_OPEN"
+
+class AgentCircuitBreaker:
+    def __init__(self, failure_threshold: int = 3, recovery_timeout_s: float = 30.0):
+        self.failure_threshold = failure_threshold
+        self.recovery_timeout_s = recovery_timeout_s
+        self.failure_count = 0
+        self.state = CircuitState.CLOSED
+        self.last_state_change = time.time()
+
+    def record_success(self):
+        self.failure_count = 0
+        self.state = CircuitState.CLOSED
+
+    def record_failure(self):
+        self.failure_count += 1
+        if self.failure_count >= self.failure_threshold:
+            self.state = CircuitState.OPEN
+            self.last_state_change = time.time()
+
+    def can_execute(self) -> bool:
+        if self.state == CircuitState.CLOSED:
+            return True
+        if self.state == CircuitState.OPEN:
+            if time.time() - self.last_state_change > self.recovery_timeout_s:
+                self.state = CircuitState.HALF_OPEN
+                return True
+            return False
+        return True # HALF_OPEN allows probe execution
