@@ -23,3 +23,6 @@ def calculate_topsis_score(neural_score: float, rule_severity_score: float, weig
     
     closeness = d_minus / (d_plus + d_minus + 1e-6)
     return float(np.clip(closeness, 0.0, 1.0))
+
+# Step 4: docs(mcda_policies): progressive code refinement step 4/1157
+# Vectorized numerical normalization
