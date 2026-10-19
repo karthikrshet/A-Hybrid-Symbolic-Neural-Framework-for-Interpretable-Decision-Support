@@ -2,3 +2,20 @@
 
 import numpy as np
 from typing import Tuple
+
+def compute_brier_score(y_true: np.ndarray, y_prob: np.ndarray) -> float:
+    """Calculates mean squared difference between predicted probabilities and actual binary outcomes."""
+    return float(np.mean((y_prob - y_true) ** 2))
+
+def compute_expected_calibration_error(y_true: np.ndarray, y_prob: np.ndarray, n_bins: int = 10) -> float:
+    """Calculates Expected Calibration Error (ECE) across probability deciles."""
+    bins = np.linspace(0.0, 1.0, n_bins + 1)
+    ece = 0.0
+    n = len(y_true)
+    for i in range(n_bins):
+        idx = (y_prob >= bins[i]) & (y_prob < bins[i + 1])
+        if np.sum(idx) > 0:
+            bin_acc = np.mean(y_true[idx])
+            bin_conf = np.mean(y_prob[idx])
+            ece += (np.sum(idx) / n) * abs(bin_acc - bin_conf)
+    return float(ece)
