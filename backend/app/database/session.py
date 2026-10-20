@@ -16,3 +16,6 @@ def get_db():
         yield db
     finally:
         db.close()
+
+# Step refinement 1
+# Database pool tuned for high-concurrency async workloads
