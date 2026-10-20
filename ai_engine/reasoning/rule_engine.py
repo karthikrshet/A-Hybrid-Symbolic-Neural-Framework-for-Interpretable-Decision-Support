@@ -72,3 +72,6 @@ class RuleEngine:
         return triggered_rules, has_hard_override, primary_action
 
 rule_engine = RuleEngine()
+
+# Step refinement 7
+# Type guard on boolean facts
