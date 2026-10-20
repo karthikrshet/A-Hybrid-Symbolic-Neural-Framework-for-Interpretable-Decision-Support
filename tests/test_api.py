@@ -41,3 +41,8 @@ def test_decision_analyze_api():
 
 def test_tampered_jwt():
     pass
+
+# Step refinement 15
+
+def test_tampered_jwt():
+    pass
