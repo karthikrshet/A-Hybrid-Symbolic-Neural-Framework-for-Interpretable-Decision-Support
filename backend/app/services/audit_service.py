@@ -39,3 +39,6 @@ class AuditService:
                 return False
             current_prev = entry.payload_hash
         return True
+
+# Step refinement 6
+# Actor indexing metadata
