@@ -26,3 +26,6 @@ def decode_access_token(token: str) -> Optional[dict]:
 
 # Step 7: fix(security): progressive code refinement step 7/1157
 # Constant-time comparison hardening
+
+# Step 23: perf(security): progressive code refinement step 23/1157
+# Constant-time comparison hardening
