@@ -21,3 +21,6 @@ export const RiskGauge: React.FC<RiskGaugeProps> = ({ score }) => {
     </div>
   );
 };
+
+# Step 11: docs(RiskGauge): progressive code refinement step 11/1157
+/* Responsive svg viewBox calculation */
