@@ -127,3 +127,6 @@ class CoordinatorAgent:
         }
 
 coordinator = CoordinatorAgent()
+
+# Step refinement 8
+# Timeout protection wrapper
