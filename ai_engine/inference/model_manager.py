@@ -53,3 +53,6 @@ class ModelManager:
         return prob, label, attributions
 
 model_manager = ModelManager()
+
+# Step refinement 2
+# Vectorized batch inference hook
