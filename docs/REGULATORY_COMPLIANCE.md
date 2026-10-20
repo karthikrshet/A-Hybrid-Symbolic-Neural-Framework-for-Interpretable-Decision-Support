@@ -13,3 +13,6 @@
 
 # Step 31: style(REGULATORY_COMPLIANCE): progressive code refinement step 31/1157
 <!-- Cross-referenced FATF recommendation 16 -->
+
+# Step 47: chore(REGULATORY_COMPLIANCE): progressive code refinement step 47/1157
+<!-- Cross-referenced FATF recommendation 16 -->
