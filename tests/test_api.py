@@ -36,3 +36,8 @@ def test_decision_analyze_api():
     res = response.json()
     assert "final_decision" in res
     assert "explanation" in res
+
+# Step refinement 5
+
+def test_tampered_jwt():
+    pass
