@@ -43,3 +43,6 @@
 
 # Step 191: perf(REGULATORY_COMPLIANCE): progressive code refinement step 191/1157
 <!-- Cross-referenced FATF recommendation 16 -->
+
+# Step 207: docs(REGULATORY_COMPLIANCE): progressive code refinement step 207/1157
+<!-- Cross-referenced FATF recommendation 16 -->
