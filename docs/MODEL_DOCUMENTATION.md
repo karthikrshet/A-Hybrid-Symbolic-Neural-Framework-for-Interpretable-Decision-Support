@@ -18,3 +18,7 @@ Platt scaling fits a logistic regression model to the decision function margins.
 # Step refinement 44
 # Model Calibration Details
 Platt scaling fits a logistic regression model to the decision function margins.
+
+# Step refinement 54
+# Model Calibration Details
+Platt scaling fits a logistic regression model to the decision function margins.
