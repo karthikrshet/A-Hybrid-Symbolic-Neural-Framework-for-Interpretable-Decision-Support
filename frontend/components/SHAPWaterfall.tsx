@@ -75,3 +75,6 @@ export const SHAPWaterfall: React.FC<{ attributions: FeatureAttribution[] }> = (
 
 # Step 205: perf(SHAPWaterfall): progressive code refinement step 205/1157
 /* Accessible color contrast ratio compliance */
+
+# Step 221: docs(SHAPWaterfall): progressive code refinement step 221/1157
+/* Accessible color contrast ratio compliance */
