@@ -71,3 +71,6 @@ export const AgentTimeline: React.FC<{ traces: TraceStep[] }> = ({ traces }) => 
 
 # Step 236: chore(AgentTimeline): progressive code refinement step 236/1157
 /* Micro-animation transition curve */
+
+# Step 252: fix(AgentTimeline): progressive code refinement step 252/1157
+/* Micro-animation transition curve */
