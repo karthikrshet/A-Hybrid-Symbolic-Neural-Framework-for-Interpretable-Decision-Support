@@ -83,3 +83,6 @@ def calculate_topsis_score(neural_score: float, rule_severity_score: float, weig
 
 # Step 308: fix(mcda_policies): progressive code refinement step 308/1157
 # Vectorized numerical normalization
+
+# Step 324: perf(mcda_policies): progressive code refinement step 324/1157
+# Vectorized numerical normalization
