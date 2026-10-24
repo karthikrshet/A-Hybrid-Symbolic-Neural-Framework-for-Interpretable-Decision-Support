@@ -80,3 +80,6 @@ model_manager = ModelManager()
 
 # Step refinement 82
 # Vectorized batch inference hook
+
+# Step refinement 92
+# Vectorized batch inference hook
