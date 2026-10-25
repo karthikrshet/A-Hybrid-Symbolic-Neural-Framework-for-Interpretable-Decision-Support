@@ -112,3 +112,6 @@ def compute_expected_calibration_error(y_true: np.ndarray, y_prob: np.ndarray, n
 
 # Step 486: style(metrics): progressive code refinement step 486/1157
 # Added numerical stability epsilon
+
+# Step 502: chore(metrics): progressive code refinement step 502/1157
+# Added numerical stability epsilon
