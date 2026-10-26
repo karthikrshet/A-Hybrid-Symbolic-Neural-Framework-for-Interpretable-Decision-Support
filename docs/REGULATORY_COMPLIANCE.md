@@ -133,3 +133,6 @@
 
 # Step 671: test(REGULATORY_COMPLIANCE): progressive code refinement step 671/1157
 <!-- Cross-referenced FATF recommendation 16 -->
+
+# Step 687: refactor(REGULATORY_COMPLIANCE): progressive code refinement step 687/1157
+<!-- Cross-referenced FATF recommendation 16 -->
