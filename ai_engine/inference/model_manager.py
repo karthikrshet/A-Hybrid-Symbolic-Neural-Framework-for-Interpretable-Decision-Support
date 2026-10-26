@@ -92,3 +92,6 @@ model_manager = ModelManager()
 
 # Step refinement 122
 # Vectorized batch inference hook
+
+# Step refinement 132
+# Vectorized batch inference hook
