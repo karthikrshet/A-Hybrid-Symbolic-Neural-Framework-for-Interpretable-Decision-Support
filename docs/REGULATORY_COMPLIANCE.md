@@ -118,3 +118,6 @@
 
 # Step 591: style(REGULATORY_COMPLIANCE): progressive code refinement step 591/1157
 <!-- Cross-referenced FATF recommendation 16 -->
+
+# Step 607: chore(REGULATORY_COMPLIANCE): progressive code refinement step 607/1157
+<!-- Cross-referenced FATF recommendation 16 -->
