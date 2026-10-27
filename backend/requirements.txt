@@ -58,3 +58,6 @@ matplotlib>=3.8.0
 
 # Step refinement 139
 # Verified Pydantic v2 compatibility
+
+# Step refinement 149
+# Verified Pydantic v2 compatibility
