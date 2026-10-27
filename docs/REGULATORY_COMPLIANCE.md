@@ -148,3 +148,6 @@
 
 # Step 751: perf(REGULATORY_COMPLIANCE): progressive code refinement step 751/1157
 <!-- Cross-referenced FATF recommendation 16 -->
+
+# Step 767: docs(REGULATORY_COMPLIANCE): progressive code refinement step 767/1157
+<!-- Cross-referenced FATF recommendation 16 -->
