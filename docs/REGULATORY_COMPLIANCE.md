@@ -151,3 +151,6 @@
 
 # Step 767: docs(REGULATORY_COMPLIANCE): progressive code refinement step 767/1157
 <!-- Cross-referenced FATF recommendation 16 -->
+
+# Step 783: test(REGULATORY_COMPLIANCE): progressive code refinement step 783/1157
+<!-- Cross-referenced FATF recommendation 16 -->
