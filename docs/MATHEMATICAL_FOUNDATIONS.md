@@ -161,3 +161,6 @@ $$\text{Decision}(x) = \begin{cases}
 
 # Step 750: refactor(MATHEMATICAL_FOUNDATIONS): progressive code refinement step 750/1157
 <!-- Verified Shapley efficiency axiom -->
+
+# Step 766: style(MATHEMATICAL_FOUNDATIONS): progressive code refinement step 766/1157
+<!-- Verified Shapley efficiency axiom -->
