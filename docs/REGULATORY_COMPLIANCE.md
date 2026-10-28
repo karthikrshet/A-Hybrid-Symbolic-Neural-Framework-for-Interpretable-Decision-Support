@@ -163,3 +163,6 @@
 
 # Step 831: chore(REGULATORY_COMPLIANCE): progressive code refinement step 831/1157
 <!-- Cross-referenced FATF recommendation 16 -->
+
+# Step 847: fix(REGULATORY_COMPLIANCE): progressive code refinement step 847/1157
+<!-- Cross-referenced FATF recommendation 16 -->
