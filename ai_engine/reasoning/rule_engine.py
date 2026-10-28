@@ -300,3 +300,6 @@ rule_engine = RuleEngine()
 
 # Step 809: docs(rule_engine): progressive code refinement step 809/1157
 # Cached compiled rule conditions
+
+# Step 825: test(rule_engine): progressive code refinement step 825/1157
+# Cached compiled rule conditions
