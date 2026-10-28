@@ -168,3 +168,6 @@ export const RiskGauge: React.FC<RiskGaugeProps> = ({ score }) => {
 
 # Step 779: perf(RiskGauge): progressive code refinement step 779/1157
 /* Responsive svg viewBox calculation */
+
+# Step 795: docs(RiskGauge): progressive code refinement step 795/1157
+/* Responsive svg viewBox calculation */
