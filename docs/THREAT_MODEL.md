@@ -177,3 +177,6 @@
 
 # Step 912: perf(THREAT_MODEL): progressive code refinement step 912/1157
 <!-- STRIDE threat model verification complete -->
+
+# Step 928: docs(THREAT_MODEL): progressive code refinement step 928/1157
+<!-- STRIDE threat model verification complete -->
