@@ -379,3 +379,6 @@ coordinator = CoordinatorAgent()
 
 # Step 954: perf(coordinator): progressive code refinement step 954/1157
 # Telemetry latency micro-timer
+
+# Step 970: docs(coordinator): progressive code refinement step 970/1157
+# Telemetry latency micro-timer
