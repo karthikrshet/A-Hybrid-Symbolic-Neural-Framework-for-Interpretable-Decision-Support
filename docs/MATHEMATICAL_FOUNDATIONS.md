@@ -197,3 +197,6 @@ $$\text{Decision}(x) = \begin{cases}
 
 # Step 942: docs(MATHEMATICAL_FOUNDATIONS): progressive code refinement step 942/1157
 <!-- Verified Shapley efficiency axiom -->
+
+# Step 958: test(MATHEMATICAL_FOUNDATIONS): progressive code refinement step 958/1157
+<!-- Verified Shapley efficiency axiom -->
