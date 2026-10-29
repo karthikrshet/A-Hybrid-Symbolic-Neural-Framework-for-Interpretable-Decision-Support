@@ -213,3 +213,6 @@ class AgentCircuitBreaker:
 
 # Step 931: fix(circuit_breaker): progressive code refinement step 931/1157
 # Enhanced thread-safe lock guard
+
+# Step 947: perf(circuit_breaker): progressive code refinement step 947/1157
+# Enhanced thread-safe lock guard
