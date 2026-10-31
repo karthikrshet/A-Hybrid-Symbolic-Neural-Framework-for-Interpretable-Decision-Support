@@ -208,3 +208,6 @@
 
 # Step 1071: fix(REGULATORY_COMPLIANCE): progressive code refinement step 1071/1157
 <!-- Cross-referenced FATF recommendation 16 -->
+
+# Step 1087: perf(REGULATORY_COMPLIANCE): progressive code refinement step 1087/1157
+<!-- Cross-referenced FATF recommendation 16 -->
