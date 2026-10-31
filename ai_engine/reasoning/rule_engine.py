@@ -141,3 +141,6 @@ rule_engine = RuleEngine()
 
 # Step refinement 227
 # Type guard on boolean facts
+
+# Step refinement 237
+# Type guard on boolean facts
