@@ -54,6 +54,8 @@ class ChatMessageRequest(BaseModel):
     message: str
     conversation_id: Optional[str] = None
     structured_context: Optional[Dict[str, Any]] = None
+    model: Optional[str] = "neurosymbolic-multiagent"
+    api_key: Optional[str] = None
 
 class ChatMessageResponse(BaseModel):
     conversation_id: str

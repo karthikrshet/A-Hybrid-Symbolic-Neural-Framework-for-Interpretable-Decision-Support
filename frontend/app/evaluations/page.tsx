@@ -9,7 +9,7 @@ export default function EvaluationsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-2xl font-bold text-navy-900">Academic Benchmark & Research Evaluation</h2>
+        <h2 className="text-2xl font-bold text-navy-900">Performance Benchmarks & Empirical Evaluation</h2>
         <p className="text-sm text-slate-500">Comparative evaluation: Conventional Neural Baseline vs. Proposed Hybrid Neuro-Symbolic System</p>
       </div>
 

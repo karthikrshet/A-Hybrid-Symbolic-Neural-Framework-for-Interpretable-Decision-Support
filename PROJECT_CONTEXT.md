@@ -40,3 +40,41 @@ This project delivers a **production-grade Neuro-Symbolic Multi-Agent Decision S
    While the architecture is domain-agnostic, the operational demonstrator is **Financial Transaction Risk & Fraud Decision Support** using verified, reproducible datasets.
 3. **No LLM Substitution for ML:**
    The neural agent executes real machine learning models. LLMs are restricted strictly to natural language query parsing and narrative explanation synthesis.
+
+---
+
+## 4. Plain-Language Explanation & Multi-Agent Architecture
+
+### In Simple Words:
+This project aims to build an AI-powered chatbot similar to ChatGPT, but instead of depending on a single AI model, it uses multiple specialized AI models (agents), where each model is responsible for a specific task.
+
+When a user asks a question or provides a problem, the system intelligently identifies the task and routes it to the appropriate AI model or agent. These agents work together to analyze the input, generate predictions, apply logical rules, verify the results, and provide a final response with a clear explanation.
+
+For example:
+- **Neural AI Agent:** Understands user queries and identifies patterns using machine learning.
+- **Reasoning Agent:** Applies logical rules and domain-specific knowledge.
+- **Validation Agent:** Checks whether the generated answer is correct, consistent and reliable.
+- **Explanation Agent:** Explains how the system reached its conclusion.
+- **Coordinator Agent:** Manages communication between all agents and combines their results.
+
+### How the System Works:
+1. **User Interface (AI Chatbot):** User enters a question or task.
+2. **Coordinator Agent:** Understands the task and selects appropriate agents.
+3. **Neural Agent:** Prediction and pattern recognition.
+4. **Reasoning Agent:** Rules and logical decisions.
+5. **Validation Agent:** Checks reliability and consistency.
+6. **Explanation Agent:** Generates understandable explanations.
+7. **Final AI Response:** Answer + reasoning + supporting evidence + confidence.
+
+### What Makes This Project Different:
+Unlike a normal chatbot that primarily generates responses using one model, your platform will work like a team of AI specialists.
+
+For example, if someone asks whether a particular financial transaction is suspicious:
+1. The neural model identifies suspicious patterns.
+2. The reasoning agent checks predefined fraud-detection rules.
+3. The validation agent checks the prediction against the available evidence.
+4. The explanation agent describes why the transaction was flagged.
+5. The coordinator delivers the final result.
+
+**Ultimate Goal:** Build a unified AI chatbot platform where multiple specialized AI models collaborate like a team to solve different tasks and provide accurate, validated, transparent and explainable answers.
+

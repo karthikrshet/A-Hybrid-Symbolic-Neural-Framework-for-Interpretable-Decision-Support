@@ -13,77 +13,11 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-# Step refinement 3
-/* Button transition utilities */
+/* Button and interactive transition utilities */
+.btn-primary {
+  @apply px-4 py-2 bg-navy-700 hover:bg-navy-800 text-white rounded-lg font-medium text-sm transition duration-150 ease-in-out shadow-sm;
+}
 
-# Step refinement 13
-/* Button transition utilities */
-
-# Step refinement 23
-/* Button transition utilities */
-
-# Step refinement 33
-/* Button transition utilities */
-
-# Step refinement 43
-/* Button transition utilities */
-
-# Step refinement 53
-/* Button transition utilities */
-
-# Step refinement 63
-/* Button transition utilities */
-
-# Step refinement 73
-/* Button transition utilities */
-
-# Step refinement 83
-/* Button transition utilities */
-
-# Step refinement 93
-/* Button transition utilities */
-
-# Step refinement 103
-/* Button transition utilities */
-
-# Step refinement 113
-/* Button transition utilities */
-
-# Step refinement 123
-/* Button transition utilities */
-
-# Step refinement 133
-/* Button transition utilities */
-
-# Step refinement 143
-/* Button transition utilities */
-
-# Step refinement 153
-/* Button transition utilities */
-
-# Step refinement 163
-/* Button transition utilities */
-
-# Step refinement 173
-/* Button transition utilities */
-
-# Step refinement 183
-/* Button transition utilities */
-
-# Step refinement 193
-/* Button transition utilities */
-
-# Step refinement 203
-/* Button transition utilities */
-
-# Step refinement 213
-/* Button transition utilities */
-
-# Step refinement 223
-/* Button transition utilities */
-
-# Step refinement 233
-/* Button transition utilities */
-
-# Step refinement 243
-/* Button transition utilities */
+.btn-secondary {
+  @apply px-4 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg font-medium text-sm transition duration-150 ease-in-out shadow-sm;
+}

@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.app.core.config import settings
 from backend.app.database.session import engine, Base
-from backend.app.api.v1 import auth, decisions, chat, rules, evaluations, audit
+from backend.app.api.v1 import auth, decisions, chat, rules, evaluations, audit, agents, datasets, models
 
 # Initialize Database Tables
 Base.metadata.create_all(bind=engine)
@@ -24,7 +24,10 @@ app.add_middleware(
 app.include_router(auth.router, prefix=settings.API_V1_STR)
 app.include_router(decisions.router, prefix=settings.API_V1_STR)
 app.include_router(chat.router, prefix=settings.API_V1_STR)
+app.include_router(agents.router, prefix=settings.API_V1_STR)
 app.include_router(rules.router, prefix=settings.API_V1_STR)
+app.include_router(datasets.router, prefix=settings.API_V1_STR)
+app.include_router(models.router, prefix=settings.API_V1_STR)
 app.include_router(evaluations.router, prefix=settings.API_V1_STR)
 app.include_router(audit.router, prefix=settings.API_V1_STR)
 

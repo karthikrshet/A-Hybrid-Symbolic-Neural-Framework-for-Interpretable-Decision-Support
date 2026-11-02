@@ -4,7 +4,9 @@ from fastapi import APIRouter
 
 router = APIRouter(prefix="/evaluations", tags=["Evaluations & Benchmarks"])
 
+@router.get("")
 @router.get("/latest")
+@router.get("/benchmark")
 def get_latest_benchmark():
     res_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../experiments/benchmark_results.json"))
     if os.path.exists(res_path):
@@ -14,3 +16,4 @@ def get_latest_benchmark():
         "status": "NOT_RUN",
         "message": "Benchmark not yet executed. Run 'python experiments/evaluator.py' to generate results."
     }
+

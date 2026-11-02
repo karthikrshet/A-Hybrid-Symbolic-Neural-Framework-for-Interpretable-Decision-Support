@@ -4,6 +4,7 @@ from ai_engine.reasoning.rule_engine import rule_engine
 
 router = APIRouter(prefix="/rules", tags=["Symbolic Rules"])
 
+@router.get("")
 @router.get("/list")
 def list_rules():
     return {"total_rules": len(rule_engine.rules), "rules": rule_engine.rules}
