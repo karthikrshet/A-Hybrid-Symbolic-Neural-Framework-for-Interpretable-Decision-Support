@@ -10,6 +10,11 @@
 
 An enterprise-grade **Neuro-Symbolic Multi-Agent Decision Support Platform** combining genuine statistical machine learning models, deterministic forward-chaining symbolic rule engines, verifiable TreeSHAP explainability, and a modern conversational ChatGPT-style intelligence interface.
 
+```
+Repository Topics:
+neurosymbolic-ai · multi-agent-systems · explainable-ai · machine-learning · fastapi · nextjs · shap · decision-support · expert-systems · fraud-detection · symbolic-reasoning · probability-calibration · finite-state-machine · python · typescript
+```
+
 ---
 
 ## Table of Contents
