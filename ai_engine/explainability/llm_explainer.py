@@ -25,7 +25,7 @@ class LLMExplainerService:
         if self.openai_key:
             try:
                 from openai import OpenAI
-                self.client = OpenAI(api_key=self.openai_key)
+                self.client = OpenAI(api_key=self.openai_key, timeout=3.0)
                 self.provider = "OPENAI"
                 print("LLM Service: Initialized with OpenAI")
                 return
@@ -63,16 +63,21 @@ class LLMExplainerService:
                     return res.text.strip()
             except Exception as e:
                 print(f"Gemini generation fallback: {e}")
+                self.client = None
+                self.provider = "DETERMINISTIC_XAI_SYNTHESIZER"
         elif self.provider == "OPENAI" and self.client:
             try:
                 res = self.client.chat.completions.create(
                     model="gpt-4o-mini",
                     messages=[{"role": "user", "content": prompt}],
-                    max_tokens=200
+                    max_tokens=200,
+                    timeout=3.0
                 )
                 return res.choices[0].message.content.strip()
             except Exception as e:
                 print(f"OpenAI generation fallback: {e}")
+                self.client = None
+                self.provider = "DETERMINISTIC_XAI_SYNTHESIZER"
 
         # Deterministic Grounded XAI Synthesis (Zero Hallucination Guaranteed)
         features_str = ", ".join([f"{f.get('feature_name')} (impact: {f.get('attribution_score', 0):+.3f})" for f in top_features[:3]])
