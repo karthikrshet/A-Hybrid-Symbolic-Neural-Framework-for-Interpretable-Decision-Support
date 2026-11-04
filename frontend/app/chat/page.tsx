@@ -79,24 +79,86 @@ export default function ChatPage() {
     fetchConversations();
   }, []);
 
+  const getApiBase = () => {
+    if (typeof window !== 'undefined') {
+      return window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'http://127.0.0.1:8000';
+    }
+    return 'http://localhost:8000';
+  };
+
+  // Helper: Save conversations & active session to localStorage
+  const syncToLocalStorage = (convList: ConversationItem[], activeId: string, currentMsgs?: MessageItem[]) => {
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('neurosymbolic_conversations', JSON.stringify(convList));
+        if (activeId) {
+          localStorage.setItem('neurosymbolic_active_session', activeId);
+        }
+        if (activeId && currentMsgs) {
+          localStorage.setItem(`neurosymbolic_msgs_${activeId}`, JSON.stringify(currentMsgs));
+        }
+      }
+    } catch {
+      // Storage quota or private browsing fallback
+    }
+  };
+
+  // Load API key and cached conversations immediately on mount
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const savedKey = localStorage.getItem('neurosymbolic_api_key') || '';
+    setApiKey(savedKey);
+
+    // 1. Instant hydration from localStorage (never blank on refresh)
+    try {
+      const cachedConvsRaw = localStorage.getItem('neurosymbolic_conversations');
+      const cachedActiveId = localStorage.getItem('neurosymbolic_active_session') || '';
+      if (cachedConvsRaw) {
+        const cachedConvs: ConversationItem[] = JSON.parse(cachedConvsRaw);
+        if (cachedConvs.length > 0) {
+          setConversations(cachedConvs);
+          const targetId = cachedConvs.some(c => c.id === cachedActiveId) ? cachedActiveId : cachedConvs[0].id;
+          setCurrentSessionId(targetId);
+
+          const cachedMsgsRaw = localStorage.getItem(`neurosymbolic_msgs_${targetId}`);
+          if (cachedMsgsRaw) {
+            setMessages(JSON.parse(cachedMsgsRaw));
+          }
+        }
+      }
+    } catch {
+      // Fallback
+    }
+
+    // 2. Fetch fresh conversations from backend and merge
+    fetchConversations();
+  }, []);
+
   // Fetch conversations from backend
   const fetchConversations = async () => {
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/v1/chat/conversations');
+      const apiBase = getApiBase();
+      const res = await fetch(`${apiBase}/api/v1/chat/conversations`);
       if (res.ok) {
         const list: ConversationItem[] = await res.json();
-        setConversations(list);
-        if (list.length > 0 && !currentSessionId) {
-          loadConversation(list[0].id);
-        } else if (list.length === 0) {
+        if (list && list.length > 0) {
+          setConversations(list);
+          const activeId = localStorage.getItem('neurosymbolic_active_session') || list[0].id;
+          const targetId = list.some(c => c.id === activeId) ? activeId : list[0].id;
+          
+          syncToLocalStorage(list, targetId);
+          loadConversation(targetId);
+        } else {
+          // If backend has no conversations, create one
           startNewChat(false);
         }
       }
     } catch {
-      // Fallback if offline
+      // If backend is offline, preserve local state
       if (!currentSessionId) {
-        const localId = 'session_' + Date.now();
-        setCurrentSessionId(localId);
+        const fallbackId = 'session_' + Date.now();
+        setCurrentSessionId(fallbackId);
       }
     }
   };
@@ -104,17 +166,31 @@ export default function ChatPage() {
   // Load messages for a specific conversation session
   const loadConversation = async (convId: string) => {
     setCurrentSessionId(convId);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('neurosymbolic_active_session', convId);
+      // Instant display from local cache if present
+      const cachedMsgs = localStorage.getItem(`neurosymbolic_msgs_${convId}`);
+      if (cachedMsgs) {
+        try {
+          setMessages(JSON.parse(cachedMsgs));
+        } catch {}
+      }
+    }
+
     setLoading(true);
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/v1/chat/conversations/${convId}`);
+      const apiBase = getApiBase();
+      const res = await fetch(`${apiBase}/api/v1/chat/conversations/${convId}`);
       if (res.ok) {
         const data = await res.json();
-        setMessages(data.messages || []);
-      } else {
-        setMessages([]);
+        const serverMsgs = data.messages || [];
+        setMessages(serverMsgs);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(`neurosymbolic_msgs_${convId}`, JSON.stringify(serverMsgs));
+        }
       }
     } catch {
-      setMessages([]);
+      // Keep cached messages
     } finally {
       setLoading(false);
     }
@@ -124,46 +200,56 @@ export default function ChatPage() {
   const startNewChat = async (createOnBackend = true) => {
     setMessages([]);
     setInput('');
-    if (createOnBackend) {
-      try {
-        const res = await fetch('http://127.0.0.1:8000/api/v1/chat/conversations', {
-          method: 'POST'
-        });
-        if (res.ok) {
-          const newConv: ConversationItem = await res.json();
-          setConversations(prev => [newConv, ...prev]);
-          setCurrentSessionId(newConv.id);
-          inputRef.current?.focus();
-          return;
-        }
-      } catch {
-        // Fallback
-      }
-    }
-    const newId = 'session_' + Date.now();
+    const newId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'session_' + Date.now();
+    const newConv: ConversationItem = {
+      id: newId,
+      title: 'New Chat',
+      created_at: new Date().toISOString()
+    };
+
+    setConversations(prev => {
+      const updated = [newConv, ...prev.filter(c => c.id !== newId)];
+      syncToLocalStorage(updated, newId, []);
+      return updated;
+    });
     setCurrentSessionId(newId);
     inputRef.current?.focus();
+
+    if (createOnBackend) {
+      try {
+        const apiBase = getApiBase();
+        await fetch(`${apiBase}/api/v1/chat/conversations`, {
+          method: 'POST'
+        });
+      } catch {}
+    }
   };
 
   // Delete a conversation session
   const deleteConversation = async (e: React.MouseEvent, convId: string) => {
     e.stopPropagation();
     try {
-      await fetch(`http://127.0.0.1:8000/api/v1/chat/conversations/${convId}`, {
+      const apiBase = getApiBase();
+      await fetch(`${apiBase}/api/v1/chat/conversations/${convId}`, {
         method: 'DELETE'
       });
-      setConversations(prev => prev.filter(c => c.id !== convId));
+    } catch {}
+
+    setConversations(prev => {
+      const updated = prev.filter(c => c.id !== convId);
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(`neurosymbolic_msgs_${convId}`);
+      }
       if (currentSessionId === convId) {
-        const remaining = conversations.filter(c => c.id !== convId);
-        if (remaining.length > 0) {
-          loadConversation(remaining[0].id);
+        if (updated.length > 0) {
+          loadConversation(updated[0].id);
         } else {
-          startNewChat(true);
+          startNewChat(false);
         }
       }
-    } catch {
-      setConversations(prev => prev.filter(c => c.id !== convId));
-    }
+      syncToLocalStorage(updated, currentSessionId === convId ? (updated[0]?.id || '') : currentSessionId);
+      return updated;
+    });
   };
 
   const handleSend = async (textToSend?: string) => {
@@ -177,12 +263,19 @@ export default function ChatPage() {
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
-    setMessages(prev => [...prev, userMsg]);
+    const updatedWithUser = [...messages, userMsg];
+    setMessages(updatedWithUser);
     setInput('');
     setLoading(true);
 
+    // Save user message immediately to local cache
+    if (currentSessionId) {
+      syncToLocalStorage(conversations, currentSessionId, updatedWithUser);
+    }
+
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/v1/chat/message', {
+      const apiBase = getApiBase();
+      const res = await fetch(`${apiBase}/api/v1/chat/message`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -195,8 +288,8 @@ export default function ChatPage() {
 
       if (res.ok) {
         const data = await res.json();
+        const activeId = data.conversation_id || currentSessionId;
         
-        // Update session ID if backend returned one
         if (data.conversation_id && data.conversation_id !== currentSessionId) {
           setCurrentSessionId(data.conversation_id);
         }
@@ -209,23 +302,40 @@ export default function ChatPage() {
           traces: data.agent_traces || [],
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         };
-        setMessages(prev => [...prev, assistantMsg]);
 
-        // Refresh conversations to show updated title
-        fetchConversations();
+        const finalMsgs = [...updatedWithUser, assistantMsg];
+        setMessages(finalMsgs);
+
+        // Update conversation title if needed
+        let newTitle = query.slice(0, 36);
+        if (query.length > 36) newTitle += '...';
+
+        setConversations(prev => {
+          const exists = prev.some(c => c.id === activeId);
+          let updated: ConversationItem[];
+          if (exists) {
+            updated = prev.map(c => c.id === activeId ? { ...c, title: c.title === 'New Chat' ? newTitle : c.title } : c);
+          } else {
+            updated = [{ id: activeId, title: newTitle, created_at: new Date().toISOString() }, ...prev];
+          }
+          syncToLocalStorage(updated, activeId, finalMsgs);
+          return updated;
+        });
       } else {
         throw new Error('Backend HTTP error');
       }
     } catch {
-      setMessages(prev => [
-        ...prev,
-        {
-          id: String(Date.now() + 1),
-          sender: 'ASSISTANT',
-          text: 'Unable to reach the Neuro-Symbolic Coordinator at http://127.0.0.1:8000. Please verify that the backend server is active.',
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        }
-      ]);
+      const errorMsg: MessageItem = {
+        id: String(Date.now() + 1),
+        sender: 'ASSISTANT',
+        text: 'Unable to reach the Neuro-Symbolic Coordinator. Please ensure the backend server is active at http://localhost:8000.',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      const finalMsgs = [...updatedWithUser, errorMsg];
+      setMessages(finalMsgs);
+      if (currentSessionId) {
+        syncToLocalStorage(conversations, currentSessionId, finalMsgs);
+      }
     } finally {
       setLoading(false);
     }
