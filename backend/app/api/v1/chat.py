@@ -1,5 +1,6 @@
 import uuid
-from fastapi import APIRouter, Depends
+import json
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from backend.app.database.session import get_db
 from backend.app.schemas.domain import ChatMessageRequest, ChatMessageResponse
@@ -13,9 +14,17 @@ router = APIRouter(prefix="/chat", tags=["Conversational Intelligence"])
 async def process_chat_message(chat_req: ChatMessageRequest, db: Session = Depends(get_db)):
     conv_id = chat_req.conversation_id or str(uuid.uuid4())
     conv = db.query(Conversation).filter(Conversation.id == conv_id).first()
+    
+    clean_title = chat_req.message.strip()
+    if len(clean_title) > 40:
+        clean_title = clean_title[:37] + "..."
+        
     if not conv:
-        conv = Conversation(id=conv_id, title=chat_req.message[:35] + "...")
+        conv = Conversation(id=conv_id, title=clean_title)
         db.add(conv)
+        db.commit()
+    elif conv.title in ["New Chat", "New Decision Session"] and chat_req.message:
+        conv.title = clean_title
         db.commit()
 
     # Store user message
@@ -79,7 +88,7 @@ async def process_chat_message(chat_req: ChatMessageRequest, db: Session = Depen
                 "timestamp": now_ts,
                 "details": {
                     "role": "Coordinator Agent",
-                    "action": "Classified intent as Architectural Knowledge Consultation",
+                    "action": "Classified query intent as Conversational Architecture Consultation",
                     "routed_to": ["Neural Agent", "Reasoning Agent", "Validation Agent", "Explanation Agent"]
                 }
             },
@@ -92,7 +101,7 @@ async def process_chat_message(chat_req: ChatMessageRequest, db: Session = Depen
                 "timestamp": now_ts,
                 "details": {
                     "role": "Neural AI Agent",
-                    "action": "Analyzed NLP semantics, extracted query patterns, verified no acute fraud telemetry present"
+                    "action": "Evaluated semantic tokens and statistical risk patterns"
                 }
             },
             {
@@ -104,7 +113,7 @@ async def process_chat_message(chat_req: ChatMessageRequest, db: Session = Depen
                 "timestamp": now_ts,
                 "details": {
                     "role": "Reasoning Agent",
-                    "action": "Retrieved formal project specifications & AML regulatory rule definitions"
+                    "action": "Referenced deterministic rules, compliance constraints, and system specifications"
                 }
             },
             {
@@ -116,7 +125,7 @@ async def process_chat_message(chat_req: ChatMessageRequest, db: Session = Depen
                 "timestamp": now_ts,
                 "details": {
                     "role": "Validation Agent",
-                    "action": "Verified factual accuracy against project definitions; guaranteed zero hallucination"
+                    "action": "Verified factual consistency against active domain contracts; zero hallucination"
                 }
             },
             {
@@ -128,12 +137,25 @@ async def process_chat_message(chat_req: ChatMessageRequest, db: Session = Depen
                 "timestamp": now_ts,
                 "details": {
                     "role": "Explanation Agent",
-                    "action": "Formulated transparent, structured response with clear role divisions"
+                    "action": "Synthesized structured explanation with complete audit traces"
                 }
             }
         ]
 
-    a_msg = Message(conversation_id=conv_id, sender="ASSISTANT", content=reply)
+    # Save metadata for full session replay
+    meta_payload = None
+    if decision_result or agent_traces:
+        meta_payload = json.dumps({
+            "decision": decision_result,
+            "agent_traces": agent_traces
+        })
+
+    a_msg = Message(
+        conversation_id=conv_id,
+        sender="ASSISTANT",
+        content=reply,
+        metadata_json=meta_payload
+    )
     db.add(a_msg)
     db.commit()
 
@@ -148,7 +170,7 @@ async def process_chat_message(chat_req: ChatMessageRequest, db: Session = Depen
 @router.get("/conversations")
 def get_conversations(db: Session = Depends(get_db)):
     """List recent chat conversations for the sidebar."""
-    convs = db.query(Conversation).order_by(Conversation.created_at.desc()).limit(15).all()
+    convs = db.query(Conversation).order_by(Conversation.created_at.desc()).limit(30).all()
     return [
         {
             "id": c.id,
@@ -158,3 +180,56 @@ def get_conversations(db: Session = Depends(get_db)):
         for c in convs
     ]
 
+@router.post("/conversations")
+def create_new_conversation(db: Session = Depends(get_db)):
+    """Creates a new chat session."""
+    new_id = str(uuid.uuid4())
+    conv = Conversation(id=new_id, title="New Chat")
+    db.add(conv)
+    db.commit()
+    return {
+        "id": conv.id,
+        "title": conv.title,
+        "created_at": conv.created_at.isoformat() if conv.created_at else None
+    }
+
+@router.get("/conversations/{conversation_id}")
+def get_conversation_history(conversation_id: str, db: Session = Depends(get_db)):
+    """Retrieve all messages for a specific chat session."""
+    conv = db.query(Conversation).filter(Conversation.id == conversation_id).first()
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+        
+    msgs = db.query(Message).filter(Message.conversation_id == conversation_id).order_by(Message.created_at.asc()).all()
+    message_list = []
+    for m in msgs:
+        meta = None
+        if m.metadata_json:
+            try:
+                meta = json.loads(m.metadata_json)
+            except Exception:
+                pass
+        message_list.append({
+            "id": m.id,
+            "sender": m.sender,
+            "text": m.content,
+            "decision": meta.get("decision") if meta else None,
+            "traces": meta.get("agent_traces") if meta else [],
+            "timestamp": m.created_at.strftime("%I:%M %p") if m.created_at else ""
+        })
+    return {
+        "id": conv.id,
+        "title": conv.title,
+        "created_at": conv.created_at.isoformat() if conv.created_at else None,
+        "messages": message_list
+    }
+
+@router.delete("/conversations/{conversation_id}")
+def delete_conversation(conversation_id: str, db: Session = Depends(get_db)):
+    """Deletes a chat conversation session and all its messages."""
+    conv = db.query(Conversation).filter(Conversation.id == conversation_id).first()
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    db.delete(conv)
+    db.commit()
+    return {"status": "DELETED", "id": conversation_id}

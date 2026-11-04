@@ -2,14 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   FiEdit3,
-  FiImage,
-  FiClock,
-  FiBook,
-  FiCpu,
-  FiCode,
-  FiCompass,
   FiPlus,
-  FiMic,
   FiSend,
   FiSettings,
   FiUser,
@@ -19,10 +12,15 @@ import {
   FiActivity,
   FiBarChart2,
   FiX,
-  FiAlertTriangle,
   FiCheckCircle,
   FiInfo,
-  FiKey
+  FiKey,
+  FiTrash2,
+  FiMessageSquare,
+  FiCpu,
+  FiCopy,
+  FiCheck,
+  FiRefreshCw
 } from 'react-icons/fi';
 
 interface AgentTrace {
@@ -44,18 +42,27 @@ interface MessageItem {
   timestamp: string;
 }
 
+interface ConversationItem {
+  id: string;
+  title: string;
+  created_at?: string;
+}
+
 export default function ChatPage() {
+  const [conversations, setConversations] = useState<ConversationItem[]>([]);
+  const [currentSessionId, setCurrentSessionId] = useState<string>('');
   const [messages, setMessages] = useState<MessageItem[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [thinkMode, setThinkMode] = useState(true);
   const [selectedModel, setSelectedModel] = useState('neurosymbolic-multiagent');
   const [apiKey, setApiKey] = useState('');
-  const [activeModal, setActiveModal] = useState<string | null>(null);
-  const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [expandedTraceId, setExpandedTraceId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -64,6 +71,100 @@ export default function ChatPage() {
   useEffect(() => {
     scrollToBottom();
   }, [messages, loading]);
+
+  // Load API key from localStorage on mount
+  useEffect(() => {
+    const savedKey = localStorage.getItem('neurosymbolic_api_key') || '';
+    setApiKey(savedKey);
+    fetchConversations();
+  }, []);
+
+  // Fetch conversations from backend
+  const fetchConversations = async () => {
+    try {
+      const res = await fetch('http://127.0.0.1:8000/api/v1/chat/conversations');
+      if (res.ok) {
+        const list: ConversationItem[] = await res.json();
+        setConversations(list);
+        if (list.length > 0 && !currentSessionId) {
+          loadConversation(list[0].id);
+        } else if (list.length === 0) {
+          startNewChat(false);
+        }
+      }
+    } catch {
+      // Fallback if offline
+      if (!currentSessionId) {
+        const localId = 'session_' + Date.now();
+        setCurrentSessionId(localId);
+      }
+    }
+  };
+
+  // Load messages for a specific conversation session
+  const loadConversation = async (convId: string) => {
+    setCurrentSessionId(convId);
+    setLoading(true);
+    try {
+      const res = await fetch(`http://127.0.0.1:8000/api/v1/chat/conversations/${convId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setMessages(data.messages || []);
+      } else {
+        setMessages([]);
+      }
+    } catch {
+      setMessages([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Start a fresh chat session
+  const startNewChat = async (createOnBackend = true) => {
+    setMessages([]);
+    setInput('');
+    if (createOnBackend) {
+      try {
+        const res = await fetch('http://127.0.0.1:8000/api/v1/chat/conversations', {
+          method: 'POST'
+        });
+        if (res.ok) {
+          const newConv: ConversationItem = await res.json();
+          setConversations(prev => [newConv, ...prev]);
+          setCurrentSessionId(newConv.id);
+          inputRef.current?.focus();
+          return;
+        }
+      } catch {
+        // Fallback
+      }
+    }
+    const newId = 'session_' + Date.now();
+    setCurrentSessionId(newId);
+    inputRef.current?.focus();
+  };
+
+  // Delete a conversation session
+  const deleteConversation = async (e: React.MouseEvent, convId: string) => {
+    e.stopPropagation();
+    try {
+      await fetch(`http://127.0.0.1:8000/api/v1/chat/conversations/${convId}`, {
+        method: 'DELETE'
+      });
+      setConversations(prev => prev.filter(c => c.id !== convId));
+      if (currentSessionId === convId) {
+        const remaining = conversations.filter(c => c.id !== convId);
+        if (remaining.length > 0) {
+          loadConversation(remaining[0].id);
+        } else {
+          startNewChat(true);
+        }
+      }
+    } catch {
+      setConversations(prev => prev.filter(c => c.id !== convId));
+    }
+  };
 
   const handleSend = async (textToSend?: string) => {
     const query = (textToSend || input).trim();
@@ -78,7 +179,6 @@ export default function ChatPage() {
 
     setMessages(prev => [...prev, userMsg]);
     setInput('');
-    setShowAttachMenu(false);
     setLoading(true);
 
     try {
@@ -86,6 +186,7 @@ export default function ChatPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          conversation_id: currentSessionId || undefined,
           message: query,
           model: selectedModel,
           api_key: apiKey || undefined
@@ -94,6 +195,12 @@ export default function ChatPage() {
 
       if (res.ok) {
         const data = await res.json();
+        
+        // Update session ID if backend returned one
+        if (data.conversation_id && data.conversation_id !== currentSessionId) {
+          setCurrentSessionId(data.conversation_id);
+        }
+
         const assistantMsg: MessageItem = {
           id: String(Date.now() + 1),
           sender: 'ASSISTANT',
@@ -103,16 +210,19 @@ export default function ChatPage() {
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         };
         setMessages(prev => [...prev, assistantMsg]);
+
+        // Refresh conversations to show updated title
+        fetchConversations();
       } else {
         throw new Error('Backend HTTP error');
       }
-    } catch (err) {
+    } catch {
       setMessages(prev => [
         ...prev,
         {
           id: String(Date.now() + 1),
           sender: 'ASSISTANT',
-          text: 'Unable to connect to the Multi-Agent Coordinator backend at http://127.0.0.1:8000. Please ensure the backend server is active.',
+          text: 'Unable to reach the Neuro-Symbolic Coordinator at http://127.0.0.1:8000. Please verify that the backend server is active.',
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
       ]);
@@ -121,9 +231,15 @@ export default function ChatPage() {
     }
   };
 
-  const startNewChat = () => {
-    setMessages([]);
-    setInput('');
+  const copyToClipboard = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const saveSettings = () => {
+    localStorage.setItem('neurosymbolic_api_key', apiKey);
+    setShowSettingsModal(false);
   };
 
   const getAgentIcon = (type: string) => {
@@ -146,656 +262,587 @@ export default function ChatPage() {
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-white text-slate-800 font-sans">
       {/* =========================================================================
-          LEFT SIDEBAR (EXACT MATCH TO USER SCREENSHOT - NO EMOJIS, REACT ICONS)
+          LEFT SIDEBAR: CHAT SESSIONS & HISTORY (ZERO MOCK JUNK)
       ========================================================================= */}
-      <aside className="w-64 bg-[#f9f9f9] border-r border-gray-200/70 flex flex-col justify-between shrink-0 select-none">
-        <div className="p-3 space-y-4">
-          {/* New Chat Top Button */}
+      <aside className="w-64 bg-[#f9f9f9] border-r border-gray-200/80 flex flex-col justify-between shrink-0 select-none">
+        <div className="p-3 flex flex-col h-[calc(100vh-65px)]">
+          {/* New Chat Button */}
           <button
-            onClick={startNewChat}
-            className="w-full flex items-center justify-between px-3 py-2 bg-white hover:bg-gray-100/80 border border-gray-200/80 rounded-xl text-sm font-medium text-slate-800 transition shadow-sm group"
+            onClick={() => startNewChat(true)}
+            className="w-full flex items-center justify-between px-3 py-2 bg-white hover:bg-gray-100/80 border border-gray-200/80 rounded-xl text-sm font-medium text-slate-800 transition shadow-sm group shrink-0"
           >
             <div className="flex items-center space-x-2.5">
               <FiEdit3 className="w-4 h-4 text-slate-600 group-hover:text-slate-900" />
               <span>New chat</span>
             </div>
-            <span className="text-[11px] text-gray-400 font-mono">Ctrl+K</span>
+            <span className="text-[11px] text-gray-400 font-mono">
+              <FiPlus className="w-3.5 h-3.5 inline" />
+            </span>
           </button>
 
-          {/* Navigation Items (Exact from Screenshot) */}
-          <nav className="space-y-0.5 text-[13px] font-medium text-slate-700">
-            <button
-              onClick={() => setActiveModal('images')}
-              className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-200/60 transition text-left"
-            >
-              <FiImage className="w-4 h-4 text-slate-500" />
-              <span>Images</span>
-            </button>
+          {/* Chat Sessions Header */}
+          <div className="pt-4 pb-2 px-3 flex items-center justify-between shrink-0">
+            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+              Recent Chats
+            </span>
+            <span className="text-[10px] text-gray-400 font-mono">
+              {conversations.length}
+            </span>
+          </div>
 
-            <button
-              onClick={() => setActiveModal('scheduled')}
-              className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-200/60 transition text-left"
-            >
-              <FiClock className="w-4 h-4 text-slate-500" />
-              <span>Scheduled</span>
-            </button>
+          {/* Chat Sessions List (Real, Dynamic, Database-Backed) */}
+          <div className="flex-1 overflow-y-auto space-y-1 pr-1 text-xs">
+            {conversations.length === 0 ? (
+              <div className="px-3 py-6 text-center text-slate-400 text-xs italic">
+                No past conversations. Click &ldquo;New chat&rdquo; to start.
+              </div>
+            ) : (
+              conversations.map(conv => {
+                const isActive = conv.id === currentSessionId;
+                return (
+                  <div
+                    key={conv.id}
+                    onClick={() => loadConversation(conv.id)}
+                    className={`group flex items-center justify-between px-3 py-2.5 rounded-lg transition cursor-pointer text-left ${
+                      isActive
+                        ? 'bg-slate-200/70 text-slate-900 font-semibold shadow-sm'
+                        : 'text-slate-600 hover:bg-gray-200/50 hover:text-slate-900'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-2.5 min-w-0 flex-1 mr-2">
+                      <FiMessageSquare
+                        className={`w-3.5 h-3.5 shrink-0 ${
+                          isActive ? 'text-blue-600' : 'text-slate-400'
+                        }`}
+                      />
+                      <span className="truncate block">{conv.title || 'Conversation'}</span>
+                    </div>
 
-            <button
-              onClick={() => setActiveModal('library')}
-              className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-200/60 transition text-left"
-            >
-              <FiBook className="w-4 h-4 text-slate-500" />
-              <span>Library</span>
-            </button>
-
-            <button
-              onClick={() => setActiveModal('plugins')}
-              className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-200/60 transition text-left"
-            >
-              <FiCpu className="w-4 h-4 text-slate-500" />
-              <span>Plugins</span>
-            </button>
-
-            <button
-              onClick={() => setActiveModal('codex')}
-              className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-200/60 transition text-left"
-            >
-              <FiCode className="w-4 h-4 text-slate-500" />
-              <span>Codex</span>
-            </button>
-
-            <button
-              onClick={() => setActiveModal('explore')}
-              className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-200/60 transition text-left"
-            >
-              <FiCompass className="w-4 h-4 text-slate-500" />
-              <span>... Explore</span>
-            </button>
-          </nav>
-
-          {/* Pinned Section (Exact Match to Screenshot) */}
-          <div className="pt-3">
-            <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-3 mb-2">
-              Pinned
-            </div>
-            <div className="space-y-0.5 text-xs text-slate-700">
-              <button
-                onClick={() => handleSend('Tell me innovative product ideas for CodeMyFYP based on AI and Multi-Agent Systems')}
-                className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-200/60 transition truncate block font-medium"
-                title="Product Ideas for CodeMyFYP"
-              >
-                Product Ideas for CodeMyFYP
-              </button>
-              <button
-                onClick={() => handleSend('Evaluate a $25,000 international transfer to a sanctioned country without KYC')}
-                className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-200/60 transition truncate block text-slate-600"
-                title="Financial Risk Audit #1042"
-              >
-                Financial Risk Audit #1042
-              </button>
-              <button
-                onClick={() => handleSend('How does the Neural Model collaborate with the Symbolic Rule Engine?')}
-                className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-200/60 transition truncate block text-slate-600"
-                title="Neuro-Symbolic Framework"
-              >
-                Neuro-Symbolic Framework
-              </button>
-            </div>
+                    <button
+                      onClick={e => deleteConversation(e, conv.id)}
+                      className="opacity-0 group-hover:opacity-100 p-1 hover:text-rose-600 text-slate-400 rounded transition"
+                      title="Delete chat session"
+                    >
+                      <FiTrash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
 
-        {/* Bottom Profile (Clean User Profile - No personal names) */}
-        <div className="p-3 border-t border-gray-200/70">
-          <div className="flex items-center space-x-3 px-2 py-1.5 rounded-xl hover:bg-gray-200/60 transition cursor-pointer">
-            <div className="w-8 h-8 rounded-full bg-slate-800 text-white font-bold flex items-center justify-center text-xs shadow-inner">
-              <FiUser className="w-4 h-4" />
+        {/* Sidebar Footer: Settings & Account */}
+        <div className="p-3 border-t border-gray-200/80 bg-white/50">
+          <button
+            onClick={() => setShowSettingsModal(true)}
+            className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-200/60 transition text-left text-xs font-medium text-slate-700"
+          >
+            <div className="flex items-center space-x-2.5">
+              <FiSettings className="w-4 h-4 text-slate-500" />
+              <span>Model & API Settings</span>
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-xs font-semibold text-slate-800 truncate">Account</div>
-              <div className="text-[10px] text-gray-400 truncate">Enterprise Platform</div>
-            </div>
-            <button
-              onClick={() => setActiveModal('settings')}
-              title="API & System Settings"
-              className="text-gray-400 hover:text-slate-700 p-1"
-            >
-              <FiSettings className="w-4 h-4" />
-            </button>
-          </div>
+            {apiKey ? (
+              <span className="w-2 h-2 rounded-full bg-emerald-500" title="API key configured" />
+            ) : (
+              <span className="text-[10px] text-slate-400">Default</span>
+            )}
+          </button>
         </div>
       </aside>
 
       {/* =========================================================================
-          MAIN CHAT WORKSPACE CANVAS
+          MAIN CHAT WORKSPACE
       ========================================================================= */}
       <main className="flex-1 flex flex-col h-screen relative bg-white overflow-hidden">
-        {/* Top Minimal Bar */}
-        <header className="h-12 border-b border-gray-100 flex items-center justify-between px-6 shrink-0 z-10">
-          <div className="flex items-center space-x-2">
-            <span className="font-semibold text-sm text-slate-800">NeuroSymbolic AI</span>
-            <span className="text-xs text-gray-400">&bull;</span>
-            <select
-              value={selectedModel}
-              onChange={(e) => setSelectedModel(e.target.value)}
-              className="bg-transparent text-xs text-slate-600 font-medium outline-none cursor-pointer border border-transparent hover:border-gray-200 rounded px-1.5 py-0.5"
-            >
-              <option value="neurosymbolic-multiagent">Multi-Agent Team (Default)</option>
-              <option value="gpt-4o-mini">GPT-4o Mini (OpenAI)</option>
-              <option value="gemini-1.5-flash">Gemini 1.5 Flash (Google)</option>
-            </select>
+        {/* Top Floating Control Bar */}
+        <header className="h-14 px-6 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white/90 backdrop-blur z-10">
+          <div className="flex items-center space-x-3">
+            {/* Model Selector Dropdown */}
+            <div className="relative inline-block text-left">
+              <select
+                value={selectedModel}
+                onChange={e => setSelectedModel(e.target.value)}
+                className="appearance-none bg-slate-50 hover:bg-slate-100 text-slate-800 font-semibold text-xs px-3 py-1.5 pr-8 rounded-lg border border-slate-200 cursor-pointer focus:outline-none transition shadow-sm"
+              >
+                <option value="neurosymbolic-multiagent">NeuroSymbolic Multi-Agent Team (Default)</option>
+                <option value="gpt-4o-mini">OpenAI GPT-4o Mini</option>
+                <option value="gemini-1.5-flash">Google Gemini 1.5 Flash</option>
+              </select>
+              <FiChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+
+            <span className="text-[11px] font-mono text-slate-400 hidden sm:inline">
+              {selectedModel === 'neurosymbolic-multiagent'
+                ? 'ML Classifier + Deterministic Rules + TreeSHAP'
+                : 'External Generative LLM'}
+            </span>
           </div>
-          <div className="flex items-center space-x-3 text-xs">
+
+          <div className="flex items-center space-x-2">
             <button
-              onClick={() => setActiveModal('settings')}
-              className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md font-medium transition flex items-center space-x-1.5"
+              onClick={() => startNewChat(true)}
+              className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 transition flex items-center space-x-1.5"
             >
-              <FiKey className="w-3.5 h-3.5 text-slate-500" />
-              <span>Configure API Keys</span>
+              <FiPlus className="w-3.5 h-3.5" />
+              <span>New chat</span>
             </button>
-            <a
-              href="/decision"
-              className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md font-medium transition flex items-center space-x-1"
+
+            <button
+              onClick={() => setShowSettingsModal(true)}
+              className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition"
+              title="Configure API Keys"
             >
-              <span>Decision Studio</span>
-            </a>
-            <a
-              href="/evaluations"
-              className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md font-medium transition flex items-center space-x-1"
-            >
-              <span>Benchmarks</span>
-            </a>
+              <FiKey className="w-4 h-4" />
+            </button>
           </div>
         </header>
 
-        {/* Message Stream or Empty Greeting Canvas */}
-        <div className="flex-1 overflow-y-auto px-4 md:px-0 py-6 space-y-6">
+        {/* Message Feed / Empty State */}
+        <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6 space-y-6">
           {messages.length === 0 ? (
-            /* ===================================================================
-               EMPTY STATE CANVAS (EXACT MATCH TO SCREENSHOT - CLEAN & SPACIOUS)
-            =================================================================== */
-            <div className="h-full flex flex-col items-center justify-center text-center px-4 -mt-20">
-              <h1 className="text-3xl md:text-4xl font-normal text-slate-800 tracking-tight">
-                What can I help with today?
-              </h1>
+            /* Empty State: Clean & Functional */
+            <div className="h-full flex flex-col items-center justify-center max-w-2xl mx-auto text-center space-y-6 select-none">
+              <div className="w-14 h-14 rounded-2xl bg-slate-900 text-white flex items-center justify-center shadow-lg">
+                <FiCpu className="w-7 h-7 text-blue-400" />
+              </div>
+
+              <div>
+                <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+                  What can I help with today?
+                </h1>
+                <p className="text-sm text-slate-500 mt-1 max-w-md mx-auto">
+                  Submit financial transactions to the 5-agent neuro-symbolic engine or ask any questions about AML risk and explainability.
+                </p>
+              </div>
+
+              {/* Functional Quick-Action Chips */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full text-left pt-2">
+                <button
+                  onClick={() =>
+                    handleSend(
+                      'Evaluate a $15,000 transaction with incomplete KYC and 4 failed login attempts'
+                    )
+                  }
+                  className="p-3.5 rounded-xl border border-slate-200 hover:border-blue-400 hover:bg-blue-50/40 transition group"
+                >
+                  <div className="text-xs font-semibold text-slate-800 group-hover:text-blue-700">
+                    High Risk & Incomplete KYC
+                  </div>
+                  <div className="text-[11px] text-slate-500 mt-0.5 line-clamp-1">
+                    $15,000 wire with KYC incomplete & 4 failed logins
+                  </div>
+                </button>
+
+                <button
+                  onClick={() =>
+                    handleSend(
+                      'Evaluate transaction of $50,000 destined for a sanctioned embargoed country'
+                    )
+                  }
+                  className="p-3.5 rounded-xl border border-slate-200 hover:border-blue-400 hover:bg-blue-50/40 transition group"
+                >
+                  <div className="text-xs font-semibold text-slate-800 group-hover:text-blue-700">
+                    Sanctioned Jurisdiction Override
+                  </div>
+                  <div className="text-[11px] text-slate-500 mt-0.5 line-clamp-1">
+                    Triggers deterministic AML hard statutory rejection
+                  </div>
+                </button>
+
+                <button
+                  onClick={() =>
+                    handleSend(
+                      'How do deterministic AML rules override neural machine learning probabilities?'
+                    )
+                  }
+                  className="p-3.5 rounded-xl border border-slate-200 hover:border-blue-400 hover:bg-blue-50/40 transition group"
+                >
+                  <div className="text-xs font-semibold text-slate-800 group-hover:text-blue-700">
+                    Neuro-Symbolic Precedence
+                  </div>
+                  <div className="text-[11px] text-slate-500 mt-0.5 line-clamp-1">
+                    Explain the multi-criteria fusion decision matrix
+                  </div>
+                </button>
+
+                <button
+                  onClick={() =>
+                    handleSend(
+                      'Explain how TreeSHAP calculates feature attributions for fraud risk scoring'
+                    )
+                  }
+                  className="p-3.5 rounded-xl border border-slate-200 hover:border-blue-400 hover:bg-blue-50/40 transition group"
+                >
+                  <div className="text-xs font-semibold text-slate-800 group-hover:text-blue-700">
+                    TreeSHAP Explainability
+                  </div>
+                  <div className="text-[11px] text-slate-500 mt-0.5 line-clamp-1">
+                    Polynomial Shapley values for transparent decision support
+                  </div>
+                </button>
+              </div>
             </div>
           ) : (
-            /* Active Chat Stream */
-            <div className="max-w-3xl mx-auto w-full space-y-6 pb-36">
-              {messages.map((m) => (
-                <div key={m.id} className="space-y-3">
+            /* Active Message History */
+            <div className="max-w-3xl mx-auto space-y-6">
+              {messages.map(msg => (
+                <div
+                  key={msg.id}
+                  className={`flex flex-col ${
+                    msg.sender === 'USER' ? 'items-end' : 'items-start'
+                  } space-y-2`}
+                >
+                  {/* Sender & Timestamp Header */}
+                  <div className="flex items-center space-x-2 text-[11px] text-slate-400 px-1">
+                    <span className="font-semibold text-slate-600">
+                      {msg.sender === 'USER' ? 'You' : 'NeuroSymbolic AI'}
+                    </span>
+                    <span>•</span>
+                    <span>{msg.timestamp}</span>
+                  </div>
+
                   {/* Message Bubble */}
-                  <div className={`flex ${m.sender === 'USER' ? 'justify-end' : 'justify-start'}`}>
-                    {m.sender === 'ASSISTANT' && (
-                      <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-bold mr-3 shrink-0 mt-0.5 shadow-sm">
-                        NS
+                  <div
+                    className={`rounded-2xl p-4 text-sm leading-relaxed ${
+                      msg.sender === 'USER'
+                        ? 'bg-slate-100 text-slate-900 rounded-tr-sm max-w-[85%]'
+                        : 'bg-white border border-slate-200/90 shadow-sm text-slate-800 w-full'
+                    }`}
+                  >
+                    <div className="whitespace-pre-wrap">{msg.text}</div>
+
+                    {/* Decision Verdict Card (if financial transaction was evaluated) */}
+                    {msg.decision && (
+                      <div className="mt-4 pt-4 border-t border-slate-100 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                            Formal Multi-Agent Verdict
+                          </span>
+                          <span
+                            className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase ${
+                              msg.decision.final_decision === 'REJECT'
+                                ? 'bg-rose-100 text-rose-800'
+                                : msg.decision.final_decision === 'APPROVE'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : 'bg-amber-100 text-amber-800'
+                            }`}
+                          >
+                            {msg.decision.final_decision}
+                          </span>
+                        </div>
+
+                        {/* Confidence & Epistemic Uncertainty */}
+                        <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50 p-2.5 rounded-lg border border-slate-100 font-mono">
+                          <div>
+                            <span className="text-slate-500 font-sans block text-[10px] uppercase">
+                              Confidence
+                            </span>
+                            <span className="font-bold text-slate-800">
+                              {(msg.decision.confidence_score * 100).toFixed(1)}%
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-slate-500 font-sans block text-[10px] uppercase">
+                              Calibrated Neural Risk
+                            </span>
+                            <span className="font-bold text-slate-800">
+                              {(
+                                (msg.decision.neural_analysis?.risk_probability || 0) * 100
+                              ).toFixed(1)}
+                              %
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Triggered Rules */}
+                        {msg.decision.symbolic_analysis?.triggered_rules?.length > 0 && (
+                          <div>
+                            <span className="text-[11px] font-bold text-slate-500 uppercase block mb-1.5">
+                              Triggered Compliance Rules
+                            </span>
+                            <div className="space-y-1">
+                              {msg.decision.symbolic_analysis.triggered_rules.map(
+                                (r: any, idx: number) => (
+                                  <div
+                                    key={idx}
+                                    className="p-2 rounded bg-rose-50/70 border border-rose-200/70 text-xs flex justify-between items-center"
+                                  >
+                                    <span className="font-medium text-rose-900">{r.rule_name}</span>
+                                    <span className="text-[10px] font-bold uppercase text-rose-700 bg-rose-100 px-1.5 py-0.5 rounded">
+                                      {r.severity}
+                                    </span>
+                                  </div>
+                                )
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Top Driving SHAP Features */}
+                        {msg.decision.explanation?.top_driving_features?.length > 0 && (
+                          <div>
+                            <span className="text-[11px] font-bold text-slate-500 uppercase block mb-1.5">
+                              Top TreeSHAP Attribution Factors
+                            </span>
+                            <div className="space-y-1">
+                              {msg.decision.explanation.top_driving_features
+                                .slice(0, 3)
+                                .map((f: any, idx: number) => (
+                                  <div
+                                    key={idx}
+                                    className="flex items-center justify-between text-xs py-1 px-2 rounded bg-slate-50"
+                                  >
+                                    <span className="text-slate-700">{f.feature_name}</span>
+                                    <span
+                                      className={`font-mono font-bold ${
+                                        f.attribution_score > 0
+                                          ? 'text-rose-600'
+                                          : 'text-emerald-600'
+                                      }`}
+                                    >
+                                      {f.attribution_score > 0 ? '+' : ''}
+                                      {f.attribution_score.toFixed(3)}
+                                    </span>
+                                  </div>
+                                ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
 
-                    <div
-                      className={`max-w-2xl text-[14px] leading-relaxed ${
-                        m.sender === 'USER'
-                          ? 'bg-[#f4f4f4] text-slate-900 rounded-3xl px-5 py-3'
-                          : 'text-slate-800 w-full'
-                      }`}
-                    >
-                      <div className="whitespace-pre-wrap">{m.text}</div>
-
-                      {/* If Decision Attached: Show Verdict Card */}
-                      {m.decision && (
-                        <div className="mt-4 p-4 rounded-xl border border-gray-200 bg-slate-50/60 shadow-sm space-y-3">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                              Collaborative Decision
-                            </span>
-                            <span
-                              className={`px-3 py-1 rounded-full text-xs font-bold ${
-                                m.decision.final_decision === 'REJECT'
-                                  ? 'bg-rose-100 text-rose-800 border border-rose-200'
-                                  : m.decision.final_decision === 'REQUIRES_HUMAN_REVIEW'
-                                  ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                                  : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                              }`}
-                            >
-                              {m.decision.final_decision} ({(m.decision.confidence_score * 100).toFixed(1)}% Confidence)
-                            </span>
-                          </div>
-
-                          {m.decision.neural_analysis && (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs pt-1 border-t border-gray-200/60">
-                              <div>
-                                <span className="text-gray-400 block text-[10px]">Neural Risk</span>
-                                <span className="font-semibold text-slate-800">
-                                  {(m.decision.neural_analysis.risk_probability * 100).toFixed(1)}%
-                                </span>
-                              </div>
-                              <div>
-                                <span className="text-gray-400 block text-[10px]">Symbolic Override</span>
-                                <span className="font-semibold text-slate-800">
-                                  {m.decision.symbolic_analysis?.has_hard_override ? 'YES (Hard Policy)' : 'NO'}
-                                </span>
-                              </div>
-                              <div>
-                                <span className="text-gray-400 block text-[10px]">Validation Status</span>
-                                <span className="font-semibold text-emerald-700">
-                                  {m.decision.validation_status || 'VERIFIED'}
-                                </span>
-                              </div>
-                            </div>
+                    {/* Collaborative Multi-Agent Execution Trace (Think Mode) */}
+                    {thinkMode && msg.traces && msg.traces.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-slate-100">
+                        <button
+                          onClick={() =>
+                            setExpandedTraceId(expandedTraceId === msg.id ? null : msg.id)
+                          }
+                          className="flex items-center space-x-1.5 text-xs text-blue-600 font-semibold hover:text-blue-800 transition"
+                        >
+                          <FiActivity className="w-3.5 h-3.5" />
+                          <span>
+                            {expandedTraceId === msg.id ? 'Hide' : 'View'} 5-Agent Collaborative
+                            Workflow Trace ({msg.traces.length} steps)
+                          </span>
+                          {expandedTraceId === msg.id ? (
+                            <FiChevronUp className="w-3.5 h-3.5" />
+                          ) : (
+                            <FiChevronDown className="w-3.5 h-3.5" />
                           )}
-                        </div>
-                      )}
+                        </button>
 
-                      {/* Specialized Agent Collaboration Card (Expandable Thoughts) */}
-                      {m.traces && m.traces.length > 0 && (
-                        <div className="mt-3 pt-2">
-                          <button
-                            onClick={() => setExpandedTraceId(expandedTraceId === m.id ? null : m.id)}
-                            className="flex items-center space-x-1.5 text-xs font-medium text-slate-500 hover:text-slate-800 py-1 transition"
-                          >
-                            <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span>
-                            <span>
-                              {expandedTraceId === m.id
-                                ? 'Hide Agent Collaboration Process'
-                                : `View Agent Collaboration Process (${m.traces.length} Specialized Agents)`}
-                            </span>
-                            {expandedTraceId === m.id ? (
-                              <FiChevronUp className="w-3 h-3 text-gray-400" />
-                            ) : (
-                              <FiChevronDown className="w-3 h-3 text-gray-400" />
-                            )}
-                          </button>
-
-                          {expandedTraceId === m.id && (
-                            <div className="mt-2.5 p-3.5 bg-gray-50 border border-gray-200/80 rounded-xl space-y-2 text-xs">
-                              {m.traces.map((trace, idx) => (
-                                <div key={idx} className="flex items-start space-x-2.5 py-1.5 border-b border-gray-200/40 last:border-0">
-                                  <div className="mt-0.5">{getAgentIcon(trace.agent_type)}</div>
-                                  <div className="flex-1">
-                                    <div className="flex items-center justify-between">
-                                      <span className="font-semibold text-slate-800">
-                                        {trace.details?.role || trace.agent_id}
-                                      </span>
-                                      <span className="text-[10px] font-mono text-gray-400">
-                                        {trace.execution_time_ms.toFixed(1)} ms
-                                      </span>
-                                    </div>
-                                    <p className="text-slate-600 text-[11px] mt-0.5">
-                                      {trace.details?.action ||
-                                        (trace.details?.triggered_rules
-                                          ? `Triggered ${trace.details.triggered_rules.length} rules`
-                                          : `Evaluated step ${trace.step}`)}
-                                    </p>
+                        {expandedTraceId === msg.id && (
+                          <div className="mt-2.5 space-y-2 bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs">
+                            {msg.traces.map((trace, idx) => (
+                              <div
+                                key={idx}
+                                className="flex items-start space-x-2.5 pb-2 border-b border-slate-200/60 last:border-0 last:pb-0"
+                              >
+                                <div className="mt-0.5">{getAgentIcon(trace.agent_type)}</div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-bold text-slate-800">
+                                      {trace.agent_id}
+                                    </span>
+                                    <span className="text-[10px] text-slate-400 font-mono">
+                                      {trace.execution_time_ms.toFixed(1)} ms
+                                    </span>
+                                  </div>
+                                  <div className="text-slate-600 mt-0.5 text-[11px]">
+                                    {trace.details?.action ||
+                                      trace.details?.role ||
+                                      trace.step}
                                   </div>
                                 </div>
-                              ))}
-                            </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Copy Response Button */}
+                    {msg.sender === 'ASSISTANT' && (
+                      <div className="mt-2 flex items-center justify-end space-x-2">
+                        <button
+                          onClick={() => copyToClipboard(msg.text, msg.id)}
+                          className="text-slate-400 hover:text-slate-700 text-xs flex items-center space-x-1 p-1 rounded transition"
+                          title="Copy response"
+                        >
+                          {copiedId === msg.id ? (
+                            <>
+                              <FiCheck className="w-3 h-3 text-emerald-600" />
+                              <span className="text-emerald-600 text-[10px]">Copied</span>
+                            </>
+                          ) : (
+                            <>
+                              <FiCopy className="w-3 h-3" />
+                              <span className="text-[10px]">Copy</span>
+                            </>
                           )}
-                        </div>
-                      )}
-                    </div>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
 
+              {/* Streaming / Loading Indicator */}
               {loading && (
-                <div className="flex items-start space-x-3">
-                  <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
-                    NS
+                <div className="flex flex-col items-start space-y-2">
+                  <div className="flex items-center space-x-2 text-[11px] text-slate-400 px-1">
+                    <span className="font-semibold text-slate-600">NeuroSymbolic AI</span>
+                    <span>•</span>
+                    <span>Evaluating...</span>
                   </div>
-                  <div className="flex items-center space-x-2 text-xs text-slate-500 py-2">
-                    <div className="w-2 h-2 rounded-full bg-blue-600 animate-bounce"></div>
-                    <div className="w-2 h-2 rounded-full bg-blue-600 animate-bounce [animation-delay:0.2s]"></div>
-                    <div className="w-2 h-2 rounded-full bg-blue-600 animate-bounce [animation-delay:0.4s]"></div>
-                    <span className="font-medium text-slate-600 pl-1">
-                      Coordinating specialized agents and executing model inference...
+                  <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex items-center space-x-3">
+                    <FiRefreshCw className="w-4 h-4 text-blue-600 animate-spin" />
+                    <span className="text-xs text-slate-600">
+                      Multi-agent pipeline coordinating neural inference & symbolic rule evaluation...
                     </span>
                   </div>
                 </div>
               )}
+
               <div ref={messagesEndRef} />
             </div>
           )}
         </div>
 
         {/* =========================================================================
-            BOTTOM FLOATING INPUT PILL BAR (EXACT MATCH TO USER SCREENSHOT)
+            BOTTOM FLOATING INPUT BAR
         ========================================================================= */}
-        <div className="absolute bottom-6 left-0 right-0 flex justify-center px-4 pointer-events-none z-20">
-          <div className="w-full max-w-3xl pointer-events-auto relative">
-            {/* Attachment Menu Popup */}
-            {showAttachMenu && (
-              <div className="absolute bottom-16 left-2 w-72 bg-white rounded-2xl border border-gray-200 shadow-xl p-2 space-y-1 text-xs text-slate-700 z-30">
-                <div className="px-3 py-1.5 font-semibold text-gray-400 uppercase text-[10px] tracking-wider">
-                  Select Context
-                </div>
-                <button
-                  onClick={() => {
-                    setInput('Evaluate a $25,000 transfer to a sanctioned country without KYC');
-                    setShowAttachMenu(false);
-                  }}
-                  className="w-full text-left px-3 py-2 rounded-xl hover:bg-gray-100 transition flex items-center space-x-2"
-                >
-                  <FiAlertTriangle className="w-4 h-4 text-rose-500" />
-                  <span>Sanctioned Jurisdiction Scenario</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setInput('Assess rapid withdrawal burst of $4,500 at 3am with 4 failed attempts');
-                    setShowAttachMenu(false);
-                  }}
-                  className="w-full text-left px-3 py-2 rounded-xl hover:bg-gray-100 transition flex items-center space-x-2"
-                >
-                  <FiActivity className="w-4 h-4 text-amber-500" />
-                  <span>High Velocity Burst Scenario</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setInput('Check $180 legitimate domestic verified groceries transaction');
-                    setShowAttachMenu(false);
-                  }}
-                  className="w-full text-left px-3 py-2 rounded-xl hover:bg-gray-100 transition flex items-center space-x-2"
-                >
-                  <FiCheckCircle className="w-4 h-4 text-emerald-500" />
-                  <span>Standard Domestic Payment</span>
-                </button>
-              </div>
-            )}
-
-            {/* Pill Container (Exact Match from Screenshot) */}
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleSend();
-              }}
-              className="bg-white border border-gray-200/90 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.08)] py-2.5 px-4 flex items-center space-x-3 transition-all focus-within:border-gray-300 focus-within:shadow-[0_8px_32px_rgb(0,0,0,0.12)]"
-            >
-              {/* Plus Button (+) */}
-              <button
-                type="button"
-                onClick={() => setShowAttachMenu(!showAttachMenu)}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-slate-800 transition cursor-pointer shrink-0"
-                title="Add attachment / scenario"
-              >
-                <FiPlus className="w-5 h-5" />
-              </button>
-
+        <div className="p-4 bg-gradient-to-t from-white via-white to-transparent shrink-0">
+          <div className="max-w-3xl mx-auto">
+            <div className="relative bg-white border border-gray-300 rounded-2xl shadow-md focus-within:border-gray-500 focus-within:ring-1 focus-within:ring-gray-500 transition-all p-3">
               {/* Text Input */}
-              <input
-                type="text"
+              <textarea
+                ref={inputRef}
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask ChatGPT"
-                className="flex-1 bg-transparent border-0 outline-none text-[15px] text-slate-800 placeholder:text-gray-400 py-1"
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+                rows={1}
+                placeholder="Ask anything or describe a transaction to analyze..."
+                className="w-full resize-none border-0 bg-transparent text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-0 max-h-36 min-h-[24px]"
               />
 
-              {/* Think Toggle Button */}
-              <button
-                type="button"
-                onClick={() => setThinkMode(!thinkMode)}
-                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition cursor-pointer shrink-0 ${
-                  thinkMode
-                    ? 'border-blue-200 bg-blue-50/70 text-blue-700'
-                    : 'border-gray-200 text-gray-600 hover:bg-gray-50'
-                }`}
-                title="Toggle Deep Multi-Agent Thinking"
-              >
-                <FiCpu className="w-3.5 h-3.5" />
-                <span>Think</span>
-              </button>
+              {/* Bottom Row Tools inside Input Capsule */}
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                {/* Think Mode Pill */}
+                <button
+                  type="button"
+                  onClick={() => setThinkMode(!thinkMode)}
+                  className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition ${
+                    thinkMode
+                      ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                      : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                  }`}
+                  title="Toggle multi-agent collaborative thinking traces"
+                >
+                  <FiCpu className="w-3.5 h-3.5" />
+                  <span>Think</span>
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      thinkMode ? 'bg-blue-600' : 'bg-gray-400'
+                    }`}
+                  />
+                </button>
 
-              {/* Microphone Button */}
-              <button
-                type="button"
-                onClick={() => handleSend('Assess $15,000 transfer with incomplete KYC documentation')}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-gray-500 hover:text-slate-800 hover:bg-gray-100 transition cursor-pointer shrink-0"
-                title="Voice input simulation"
-              >
-                <FiMic className="w-4 h-4" />
-              </button>
-
-              {/* Blue Circular Waveform / Send Button (Exact Match to Screenshot) */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-9 h-9 rounded-full bg-blue-600 hover:bg-blue-700 active:scale-95 flex items-center justify-center text-white shadow-sm transition cursor-pointer shrink-0 disabled:opacity-50"
-                title={input.trim() ? 'Send message' : 'Voice interaction'}
-              >
-                {input.trim() ? (
+                {/* Send Button */}
+                <button
+                  type="button"
+                  onClick={() => handleSend()}
+                  disabled={!input.trim() || loading}
+                  className={`p-2 rounded-xl transition ${
+                    input.trim() && !loading
+                      ? 'bg-slate-900 text-white hover:bg-slate-800 shadow-sm'
+                      : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                  }`}
+                  title="Send message (Enter)"
+                >
                   <FiSend className="w-4 h-4" />
-                ) : (
-                  /* Audio Waveform Bars (ılı) from Screenshot */
-                  <div className="flex items-center space-x-0.5 h-3.5">
-                    <div className="w-0.5 h-2 bg-white rounded-full"></div>
-                    <div className="w-0.5 h-3.5 bg-white rounded-full"></div>
-                    <div className="w-0.5 h-2 bg-white rounded-full"></div>
-                  </div>
-                )}
-              </button>
-            </form>
+                </button>
+              </div>
+            </div>
+
+            <div className="text-center mt-2 text-[11px] text-slate-400">
+              Multi-Agent Decision Support combines machine learning statistical inference with deterministic rule compliance.
+            </div>
           </div>
         </div>
       </main>
 
       {/* =========================================================================
-          MODALS FOR SIDEBAR ITEMS (No emojis, clean React Icons)
+          API KEY & MODEL CONFIGURATION MODAL
       ========================================================================= */}
-      {activeModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b pb-3">
-              <h3 className="text-lg font-bold text-slate-900 capitalize">
-                {activeModal === 'images' && 'System Architecture & Visualizations'}
-                {activeModal === 'scheduled' && 'Scheduled Risk & AML Batch Jobs'}
-                {activeModal === 'library' && 'Knowledge Base & Decision Rules'}
-                {activeModal === 'plugins' && 'The 5 Specialized AI Agents'}
-                {activeModal === 'codex' && 'Codex ML & Rule Engine Execution'}
-                {activeModal === 'explore' && 'Project Navigation & Capabilities'}
-                {activeModal === 'settings' && 'Configure API Keys & LLM Engine'}
-              </h3>
+      {showSettingsModal && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <div className="flex items-center space-x-2">
+                <FiKey className="w-5 h-5 text-blue-600" />
+                <h3 className="text-base font-bold text-navy-900">Model & API Key Configuration</h3>
+              </div>
               <button
-                onClick={() => setActiveModal(null)}
-                className="text-gray-400 hover:text-slate-700 p-1 rounded-lg"
+                onClick={() => setShowSettingsModal(false)}
+                className="text-slate-400 hover:text-slate-700"
               >
                 <FiX className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Settings / API Key Modal */}
-            {activeModal === 'settings' && (
-              <div className="space-y-4 text-xs text-slate-600">
-                <p>Configure external LLM providers or use the default local multi-agent pipeline:</p>
-                <div className="space-y-3">
+            <div className="space-y-4 text-xs">
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  OpenAI or Gemini API Key (Optional)
+                </label>
+                <input
+                  type="password"
+                  value={apiKey}
+                  onChange={e => setApiKey(e.target.value)}
+                  placeholder="sk-... or AIzaSy..."
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs font-mono"
+                />
+                <p className="text-[11px] text-slate-500 mt-1">
+                  If omitted, queries automatically execute via our high-precision deterministic Grounded XAI Synthesizer with zero hallucinations.
+                </p>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Active Architecture</label>
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 space-y-1">
                   <div>
-                    <label className="block font-semibold text-slate-800 mb-1">Active LLM Model</label>
-                    <select
-                      value={selectedModel}
-                      onChange={(e) => setSelectedModel(e.target.value)}
-                      className="w-full px-3 py-2 border rounded-lg text-sm bg-white"
-                    >
-                      <option value="neurosymbolic-multiagent">NeuroSymbolic Multi-Agent Team (Default)</option>
-                      <option value="gpt-4o-mini">OpenAI GPT-4o-mini</option>
-                      <option value="gemini-1.5-flash">Google Gemini 1.5 Flash</option>
-                    </select>
+                    <strong>Paradigm:</strong> Hybrid Neuro-Symbolic Multi-Agent System
                   </div>
                   <div>
-                    <label className="block font-semibold text-slate-800 mb-1">API Key (OpenAI or Gemini)</label>
-                    <input
-                      type="password"
-                      value={apiKey}
-                      onChange={(e) => setApiKey(e.target.value)}
-                      placeholder="sk-... or AIza..."
-                      className="w-full px-3 py-2 border rounded-lg text-sm font-mono"
-                    />
-                    <span className="text-[11px] text-gray-400 mt-1 block">
-                      Optional: If left blank, the system automatically uses the internal neuro-symbolic multi-agent model.
-                    </span>
+                    <strong>Models:</strong> Calibrated Random Forest / MLP + Platt Sigmoid
+                  </div>
+                  <div>
+                    <strong>Knowledge Engine:</strong> Deterministic Forward-Chaining Rules
                   </div>
                 </div>
               </div>
-            )}
+            </div>
 
-            {activeModal === 'images' && (
-              <div className="space-y-4 text-xs text-slate-600">
-                <p>Visual architecture and explainability components:</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="p-4 rounded-xl border border-gray-200 bg-slate-50 text-center">
-                    <FiBarChart2 className="w-6 h-6 text-blue-600 mx-auto mb-2" />
-                    <div className="font-semibold text-slate-800">TreeSHAP Waterfall Plots</div>
-                    <p className="text-[11px] text-gray-500 mt-1">Mathematical feature attributions</p>
-                  </div>
-                  <div className="p-4 rounded-xl border border-gray-200 bg-slate-50 text-center">
-                    <FiActivity className="w-6 h-6 text-purple-600 mx-auto mb-2" />
-                    <div className="font-semibold text-slate-800">Calibration Curves</div>
-                    <p className="text-[11px] text-gray-500 mt-1">Platt Sigmoid probability bounds</p>
-                  </div>
-                  <div className="p-4 rounded-xl border border-gray-200 bg-slate-50 text-center">
-                    <FiCpu className="w-6 h-6 text-indigo-600 mx-auto mb-2" />
-                    <div className="font-semibold text-slate-800">Coordinator FSM Workflow</div>
-                    <p className="text-[11px] text-gray-500 mt-1">7 explicit state transitions</p>
-                  </div>
-                  <div className="p-4 rounded-xl border border-gray-200 bg-slate-50 text-center">
-                    <FiShield className="w-6 h-6 text-emerald-600 mx-auto mb-2" />
-                    <div className="font-semibold text-slate-800">Decision Fusion Matrix</div>
-                    <p className="text-[11px] text-gray-500 mt-1">Symbolic override hierarchy</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeModal === 'scheduled' && (
-              <div className="space-y-3 text-xs text-slate-600">
-                <p>Automated monitoring and velocity compliance schedules:</p>
-                <div className="p-3 bg-slate-50 border rounded-xl space-y-2">
-                  <div className="flex justify-between font-semibold text-slate-800">
-                    <span>Cron: */5 * * * *</span>
-                    <span className="text-emerald-600">Active</span>
-                  </div>
-                  <p>Real-time transaction frequency & velocity burst detection.</p>
-                </div>
-                <div className="p-3 bg-slate-50 border rounded-xl space-y-2">
-                  <div className="flex justify-between font-semibold text-slate-800">
-                    <span>Cron: 0 0 * * *</span>
-                    <span className="text-emerald-600">Active</span>
-                  </div>
-                  <p>Daily compliance batch report generation & sanctions sync.</p>
-                </div>
-              </div>
-            )}
-
-            {activeModal === 'library' && (
-              <div className="space-y-3 text-xs text-slate-600">
-                <p>Knowledge Base and verified compliance rule specifications:</p>
-                <div className="space-y-2">
-                  <div className="p-2.5 bg-slate-50 border rounded-lg">
-                    <div className="font-bold text-slate-800">RULE-001: Sanctioned Jurisdiction Destination</div>
-                    <div className="text-gray-500 text-[11px]">Action: Hard Override REJECT (Priority: 100)</div>
-                  </div>
-                  <div className="p-2.5 bg-slate-50 border rounded-lg">
-                    <div className="font-bold text-slate-800">RULE-002: Excessive Velocity Ratio Spike</div>
-                    <div className="text-gray-500 text-[11px]">Action: Flag Review / High Risk (Priority: 80)</div>
-                  </div>
-                  <div className="p-2.5 bg-slate-50 border rounded-lg">
-                    <div className="font-bold text-slate-800">RULE-003: Large Off-Hours Transfer Lacking KYC</div>
-                    <div className="text-gray-500 text-[11px]">Action: Escalation to Officer (Priority: 75)</div>
-                  </div>
-                </div>
-                <div className="pt-2">
-                  <a href="/rules" className="text-blue-600 font-semibold hover:underline">
-                    View all 8 Rules in Rule Engine &rarr;
-                  </a>
-                </div>
-              </div>
-            )}
-
-            {activeModal === 'plugins' && (
-              <div className="space-y-3 text-xs text-slate-600">
-                <p>The 5 Specialized AI Agents in this platform:</p>
-                <div className="space-y-2">
-                  <div className="p-2.5 bg-slate-50 border rounded-lg flex items-center space-x-2.5">
-                    <FiCpu className="w-5 h-5 text-blue-600" />
-                    <div>
-                      <div className="font-bold text-slate-800">Coordinator Agent</div>
-                      <p className="text-gray-500 text-[11px]">Manages communication between all agents and combines results.</p>
-                    </div>
-                  </div>
-                  <div className="p-2.5 bg-slate-50 border rounded-lg flex items-center space-x-2.5">
-                    <FiActivity className="w-5 h-5 text-purple-600" />
-                    <div>
-                      <div className="font-bold text-slate-800">Neural AI Agent</div>
-                      <p className="text-gray-500 text-[11px]">Identifies patterns using statistical machine learning models.</p>
-                    </div>
-                  </div>
-                  <div className="p-2.5 bg-slate-50 border rounded-lg flex items-center space-x-2.5">
-                    <FiShield className="w-5 h-5 text-indigo-600" />
-                    <div>
-                      <div className="font-bold text-slate-800">Reasoning Agent</div>
-                      <p className="text-gray-500 text-[11px]">Applies logical rules and domain-specific knowledge.</p>
-                    </div>
-                  </div>
-                  <div className="p-2.5 bg-slate-50 border rounded-lg flex items-center space-x-2.5">
-                    <FiCheckCircle className="w-5 h-5 text-emerald-600" />
-                    <div>
-                      <div className="font-bold text-slate-800">Validation Agent</div>
-                      <p className="text-gray-500 text-[11px]">Checks whether generated results are correct and consistent.</p>
-                    </div>
-                  </div>
-                  <div className="p-2.5 bg-slate-50 border rounded-lg flex items-center space-x-2.5">
-                    <FiBarChart2 className="w-5 h-5 text-amber-600" />
-                    <div>
-                      <div className="font-bold text-slate-800">Explanation Agent</div>
-                      <p className="text-gray-500 text-[11px]">Explains how the system reached its conclusion via TreeSHAP.</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeModal === 'codex' && (
-              <div className="space-y-3 text-xs text-slate-600 font-mono">
-                <p className="font-sans">Active ML Model Artifact & Rule Engine Pipeline:</p>
-                <div className="p-3 bg-slate-900 text-emerald-400 rounded-xl text-[11px] leading-relaxed">
-                  <div># Artifact: ml/artifacts/fraud_risk_model.joblib</div>
-                  <div># CalibratedClassifierCV (Platt Scaling)</div>
-                  <div># Accuracy: 82.7% | Precision: 61.9% | ROC-AUC: 83.8%</div>
-                  <div># Test Samples: 1,500 held-out transactions</div>
-                  <div>&gt;&gt;&gt; coordinator.execute_decision_pipeline(data)</div>
-                  <div>&gt;&gt;&gt; [FSM: RECEIVED -&gt; EXECUTING -&gt; FUSING -&gt; VALIDATING -&gt; EXPLAINING -&gt; COMPLETED]</div>
-                </div>
-              </div>
-            )}
-
-            {activeModal === 'explore' && (
-              <div className="space-y-3 text-xs text-slate-600">
-                <p>Platform navigation:</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <a href="/decision" className="p-3 bg-slate-50 hover:bg-slate-100 border rounded-xl block font-semibold text-slate-800">
-                    Decision Studio
-                  </a>
-                  <a href="/evaluations" className="p-3 bg-slate-50 hover:bg-slate-100 border rounded-xl block font-semibold text-slate-800">
-                    Performance Benchmarks
-                  </a>
-                  <a href="/agents" className="p-3 bg-slate-50 hover:bg-slate-100 border rounded-xl block font-semibold text-slate-800">
-                    Live Agent Monitor
-                  </a>
-                  <a href="/models" className="p-3 bg-slate-50 hover:bg-slate-100 border rounded-xl block font-semibold text-slate-800">
-                    ML Models & Retraining
-                  </a>
-                  <a href="/rules" className="p-3 bg-slate-50 hover:bg-slate-100 border rounded-xl block font-semibold text-slate-800">
-                    Symbolic Rule Base
-                  </a>
-                  <a href="/audit" className="p-3 bg-slate-50 hover:bg-slate-100 border rounded-xl block font-semibold text-slate-800">
-                    Audit Log
-                  </a>
-                </div>
-              </div>
-            )}
-
-            <div className="pt-2 text-right">
+            <div className="flex justify-end space-x-2 pt-2 border-t border-slate-100">
               <button
-                onClick={() => setActiveModal(null)}
-                className="px-4 py-2 bg-slate-900 text-white rounded-lg text-xs font-semibold hover:bg-slate-800 transition"
+                onClick={() => setShowSettingsModal(false)}
+                className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
               >
-                Close
+                Cancel
+              </button>
+              <button
+                onClick={saveSettings}
+                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold transition shadow-sm"
+              >
+                Save Settings
               </button>
             </div>
           </div>
