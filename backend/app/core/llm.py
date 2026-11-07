@@ -78,6 +78,8 @@ def resolve_config(headers: Mapping[str, str] | None = None) -> LLMConfig | None
         return None
 
     env_provider = os.getenv("LLM_PROVIDER", "").strip().lower()
+    if env_provider == "off":
+        return None
     candidates: list[Provider] = [env_provider] if env_provider in PROVIDERS else list(PROVIDERS)  # type: ignore[list-item]
     for p in candidates:
         env_key = os.getenv(ENV_KEYS[p], "").strip()

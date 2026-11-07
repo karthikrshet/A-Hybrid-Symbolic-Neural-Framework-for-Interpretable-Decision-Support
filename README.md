@@ -44,7 +44,7 @@ The chat layer is neuro-symbolic too. Two small neural text classifiers (TF-IDF 
 Without an API key the assistant runs fully offline. To connect an LLM, either:
 
 - open **AI Assistant → Connect LLM**, choose Gemini, OpenAI or Claude, paste a key and click *Test connection*. The key stays in your browser.
-- or set environment variables before starting the backend: `LLM_PROVIDER` (`gemini` | `openai` | `anthropic`), the matching `GEMINI_API_KEY` / `OPENAI_API_KEY` / `ANTHROPIC_API_KEY`, and optionally `LLM_MODEL`.
+- or put the key in `backend/.env` (copy it from `backend/.env.example`, see [Step 1.5](#step-15-optional-create-the-environment-files)): `LLM_PROVIDER` (`gemini` | `openai` | `anthropic`), the matching `GEMINI_API_KEY` / `OPENAI_API_KEY` / `ANTHROPIC_API_KEY`, and optionally `LLM_MODEL`. Real environment variables work too and take precedence over the file.
 
 Default models: `gemini-2.5-flash`, `gpt-4o-mini`, `claude-opus-5-5`. For Claude, refusal fallbacks are enabled on supported models (`fallbacks: "default"`).
 
@@ -113,6 +113,49 @@ git clone https://github.com/karthikrshet/A-Hybrid-Symbolic-Neural-Framework-for
 ```bash
 cd A-Hybrid-Symbolic-Neural-Framework-for-Interpretable-Decision-Support
 ```
+
+### Step 1.5 (optional): create the environment files
+
+The app runs **without any configuration**. Create env files only if you want an LLM key on the server, or a different backend URL.
+
+| File to create | Copy it from | Needed for |
+|---|---|---|
+| `backend/.env` | [`backend/.env.example`](backend/.env.example) | LLM provider and API key (Gemini / OpenAI / Claude), database location |
+| `frontend/.env.local` | [`frontend/.env.example`](frontend/.env.example) | Only if the backend isn't at `http://localhost:8000` |
+
+Windows:
+
+```bash
+copy backend\.env.example backend\.env
+copy frontend\.env.example frontend\.env.local
+```
+
+macOS / Linux:
+
+```bash
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env.local
+```
+
+Then open the file and fill in the values. Example `backend/.env` using Gemini:
+
+```env
+LLM_PROVIDER=gemini
+GEMINI_API_KEY=AIzaSy...your-real-key...
+LLM_MODEL=
+```
+
+| Variable | File | Required? | Example | Meaning |
+|---|---|---|---|---|
+| `LLM_PROVIDER` | backend/.env | no | `gemini` | `gemini`, `openai`, `anthropic` or `off`. Empty = offline unless a key is set |
+| `GEMINI_API_KEY` | backend/.env | only for Gemini | `AIzaSy…` | Key from https://aistudio.google.com/app/apikey |
+| `OPENAI_API_KEY` | backend/.env | only for OpenAI | `sk-proj-…` | Key from https://platform.openai.com/api-keys |
+| `ANTHROPIC_API_KEY` | backend/.env | only for Claude | `sk-ant-…` | Key from https://console.anthropic.com/settings/keys |
+| `LLM_MODEL` | backend/.env | no | `gemini-2.5-pro` | Overrides the default model |
+| `NS_DB_PATH` | backend/.env | no | `data/neurosymbolic.db` | SQLite file for history and chats |
+| `NEXT_PUBLIC_API_URL` | frontend/.env.local | no | `http://localhost:8000` | Backend URL used by the browser |
+
+> `.env` files are git-ignored, so your keys are never committed. Restart the backend or frontend after editing them. You can also skip the file and enter a key in the chat's **Connect LLM** dialog instead.
 
 ### Step 2: start the backend (terminal 1)
 
@@ -221,7 +264,8 @@ python experiments/evaluate_baseline_vs_hybrid.py
 | Chat says *"Cannot reach the backend"* / sidebar shows *Backend offline* | Terminal 1 must be running. On the first start, wait until training finishes (`Application startup complete`). |
 | `python` is not recognised (Windows) | Reinstall Python with **"Add Python to PATH"** ticked, or use `py` instead of `python`. |
 | `pip install` fails building packages | Upgrade pip first: `python -m pip install --upgrade pip`, then retry. Use Python 3.10–3.12. |
-| Port 8000 or 3000 already in use | Stop the other program, or use another port: `uvicorn app.main:app --port 8001`, and start the frontend with `NEXT_PUBLIC_API_URL=http://localhost:8001` set in `frontend/.env.local`. |
+| Port 8000 or 3000 already in use | Stop the other program, or use another port: `uvicorn app.main:app --port 8001`, and set `NEXT_PUBLIC_API_URL=http://localhost:8001` in `frontend/.env.local`. |
+| Key in `backend/.env` is ignored | The file must be named exactly `.env` (not `.env.txt`) and sit inside `backend/`. Restart uvicorn afterwards. In the chat's **Connect LLM** dialog, choose **Server (.env)** (the default). Picking *Offline* or a provider there overrides the file. |
 | Reply says *"LLM unavailable — offline answer"* | The API key was rejected or the provider is unreachable. Open **Connect LLM** and click **Test connection** to see the exact error. |
 | Start over with a clean history | Stop the backend and delete the `backend/data/` folder. |
 | Retrain everything from scratch | Delete `backend/datasets/*.csv` and `backend/app/domains/*/model/`, then restart the backend. |

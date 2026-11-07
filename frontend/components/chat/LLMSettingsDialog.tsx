@@ -56,8 +56,8 @@ export default function LLMSettingsDialog({ initial, onClose, onSaved }: Props) 
           <button onClick={onClose} className="btn-ghost !p-2"><LuX /></button>
         </div>
 
-        <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {[{ id: "off" as const, label: "Offline" }, ...LLM_PROVIDERS].map((p) => (
+        <div className="mt-5 grid grid-cols-3 gap-2 sm:grid-cols-5">
+          {[{ id: "server" as const, label: "Server (.env)" }, { id: "off" as const, label: "Offline" }, ...LLM_PROVIDERS].map((p) => (
             <button key={p.id} onClick={() => pick(p.id)}
               className={cx("rounded-xl border px-3 py-2.5 text-xs font-semibold transition", s.provider === p.id ? "border-brand-600 bg-brand-600 text-white" : "border-slate-200 text-ink-soft hover:border-brand-300")}>
               {p.label}
@@ -90,10 +90,14 @@ export default function LLMSettingsDialog({ initial, onClose, onSaved }: Props) 
               </div>
             )}
           </div>
+        ) : s.provider === "server" ? (
+          <p className="mt-5 rounded-xl bg-slate-50 p-3 text-xs text-ink-soft">
+            Uses the provider and key from <code className="rounded bg-white px-1">backend/.env</code> (<code className="rounded bg-white px-1">LLM_PROVIDER</code>, <code className="rounded bg-white px-1">GEMINI_API_KEY</code> / <code className="rounded bg-white px-1">OPENAI_API_KEY</code> / <code className="rounded bg-white px-1">ANTHROPIC_API_KEY</code>). If none is set there, the assistant runs offline. See <code className="rounded bg-white px-1">backend/.env.example</code>.
+          </p>
         ) : (
           <p className="mt-5 rounded-xl bg-slate-50 p-3 text-xs text-ink-soft">
             Offline mode: the built-in neural intent classifier and rule-based extractors understand your questions. Everything runs locally.
-            (A key set on the server via <code className="rounded bg-white px-1">GEMINI_API_KEY</code>, <code className="rounded bg-white px-1">OPENAI_API_KEY</code> or <code className="rounded bg-white px-1">ANTHROPIC_API_KEY</code> is ignored while Offline is selected.)
+            (A key in <code className="rounded bg-white px-1">backend/.env</code> is ignored while Offline is selected.)
           </p>
         )}
 

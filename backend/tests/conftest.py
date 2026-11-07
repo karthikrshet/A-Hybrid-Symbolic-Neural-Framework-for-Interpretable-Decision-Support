@@ -4,4 +4,5 @@ import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+os.environ["LLM_PROVIDER"] = "off"  # tests never call a real LLM, even if backend/.env has a key
 os.environ.setdefault("NS_DB_PATH", str(Path(tempfile.mkdtemp()) / "test.db"))
