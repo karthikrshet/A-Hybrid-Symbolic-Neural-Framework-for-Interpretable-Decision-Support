@@ -1,21 +1,16 @@
 import "./globals.css";
-import React from "react";
-import AppLayoutWrapper from "@/components/AppLayoutWrapper";
+import type { Metadata } from "next";
+import type { ReactNode } from "react";
 
-export const metadata = {
-  title: "NeuroSymbolic AI | Interpretable Decision Support",
-  description: "A Hybrid Symbolic-Neural Framework for Multi-Agent Decision Intelligence",
+export const metadata: Metadata = {
+  title: "NeuroSymbolic AI — Interpretable Multi-Agent Decision Support",
+  description: "A Hybrid Symbolic-Neural Framework for Interpretable Decision Support across healthcare, finance, cyber security, IT and education.",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-white text-slate-900 antialiased font-sans">
-        <AppLayoutWrapper>
-          {children}
-        </AppLayoutWrapper>
-      </body>
+      <body className="min-h-screen bg-white font-sans text-ink antialiased">{children}</body>
     </html>
   );
 }
-

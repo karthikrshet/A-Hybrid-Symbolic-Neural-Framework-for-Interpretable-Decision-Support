@@ -1,0 +1,177 @@
+{
+  "domain": "healthcare",
+  "domain_name": "Healthcare",
+  "generated_at": "2026-11-07T10:03:50.032352+00:00",
+  "test_samples": 1250,
+  "classes": [
+    "Low Risk",
+    "Moderate Risk",
+    "Elevated Risk"
+  ],
+  "systems": {
+    "neural": {
+      "accuracy": 0.8384,
+      "precision": 0.8171,
+      "recall": 0.8125,
+      "f1": 0.8146,
+      "per_class": [
+        {
+          "label": "Low Risk",
+          "precision": 0.893,
+          "recall": 0.9223,
+          "f1": 0.9074,
+          "support": 579
+        },
+        {
+          "label": "Moderate Risk",
+          "precision": 0.6942,
+          "recall": 0.658,
+          "f1": 0.6756,
+          "support": 307
+        },
+        {
+          "label": "Elevated Risk",
+          "precision": 0.8643,
+          "recall": 0.8571,
+          "f1": 0.8607,
+          "support": 364
+        }
+      ],
+      "confusion_matrix": [
+        [
+          534,
+          42,
+          3
+        ],
+        [
+          59,
+          202,
+          46
+        ],
+        [
+          5,
+          47,
+          312
+        ]
+      ],
+      "name": "Neural network only",
+      "hard_rule_consistency": 0.9872,
+      "soft_rule_agreement": 0.7944,
+      "avg_confidence": 0.8367,
+      "avg_evidence_items": 6.0,
+      "symbolic_justification": 0.0
+    },
+    "symbolic": {
+      "accuracy": 0.6128,
+      "precision": 0.7344,
+      "recall": 0.627,
+      "f1": 0.6186,
+      "per_class": [
+        {
+          "label": "Low Risk",
+          "precision": 0.8444,
+          "recall": 0.5907,
+          "f1": 0.6951,
+          "support": 579
+        },
+        {
+          "label": "Moderate Risk",
+          "precision": 0.3699,
+          "recall": 0.8013,
+          "f1": 0.5062,
+          "support": 307
+        },
+        {
+          "label": "Elevated Risk",
+          "precision": 0.9889,
+          "recall": 0.489,
+          "f1": 0.6544,
+          "support": 364
+        }
+      ],
+      "confusion_matrix": [
+        [
+          342,
+          237,
+          0
+        ],
+        [
+          59,
+          246,
+          2
+        ],
+        [
+          4,
+          182,
+          178
+        ]
+      ],
+      "name": "Symbolic rules only",
+      "hard_rule_consistency": 1.0,
+      "soft_rule_agreement": 1.0,
+      "avg_confidence": 1.0,
+      "avg_evidence_items": 9.0,
+      "symbolic_justification": 1.0
+    },
+    "hybrid": {
+      "accuracy": 0.8464,
+      "precision": 0.8276,
+      "recall": 0.8288,
+      "f1": 0.828,
+      "per_class": [
+        {
+          "label": "Low Risk",
+          "precision": 0.9142,
+          "recall": 0.9016,
+          "f1": 0.9078,
+          "support": 579
+        },
+        {
+          "label": "Moderate Risk",
+          "precision": 0.6811,
+          "recall": 0.7166,
+          "f1": 0.6984,
+          "support": 307
+        },
+        {
+          "label": "Elevated Risk",
+          "precision": 0.8876,
+          "recall": 0.8681,
+          "f1": 0.8778,
+          "support": 364
+        }
+      ],
+      "confusion_matrix": [
+        [
+          522,
+          56,
+          1
+        ],
+        [
+          48,
+          220,
+          39
+        ],
+        [
+          1,
+          47,
+          316
+        ]
+      ],
+      "name": "Hybrid neuro-symbolic",
+      "hard_rule_consistency": 1.0,
+      "soft_rule_agreement": 0.8336,
+      "avg_confidence": 0.7976,
+      "avg_evidence_items": 16.0,
+      "symbolic_justification": 1.0,
+      "conflict_rate": 0.2472,
+      "override_rate": 0.0032
+    }
+  },
+  "improvement": {
+    "accuracy": 0.008,
+    "f1": 0.0134,
+    "recall": 0.0163,
+    "hard_rule_consistency": 0.0128
+  }
+}

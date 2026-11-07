@@ -1,0 +1,177 @@
+{
+  "domain": "it_troubleshooting",
+  "domain_name": "IT Troubleshooting",
+  "generated_at": "2026-11-07T10:03:50.899101+00:00",
+  "test_samples": 1250,
+  "classes": [
+    "Healthy",
+    "Service Degradation",
+    "Critical Failure Risk"
+  ],
+  "systems": {
+    "neural": {
+      "accuracy": 0.888,
+      "precision": 0.8451,
+      "recall": 0.8315,
+      "f1": 0.8379,
+      "per_class": [
+        {
+          "label": "Healthy",
+          "precision": 0.9329,
+          "recall": 0.9571,
+          "f1": 0.9449,
+          "support": 770
+        },
+        {
+          "label": "Service Degradation",
+          "precision": 0.7157,
+          "recall": 0.6577,
+          "f1": 0.6854,
+          "support": 222
+        },
+        {
+          "label": "Critical Failure Risk",
+          "precision": 0.8867,
+          "recall": 0.8798,
+          "f1": 0.8833,
+          "support": 258
+        }
+      ],
+      "confusion_matrix": [
+        [
+          737,
+          32,
+          1
+        ],
+        [
+          48,
+          146,
+          28
+        ],
+        [
+          5,
+          26,
+          227
+        ]
+      ],
+      "name": "Neural network only",
+      "hard_rule_consistency": 0.9952,
+      "soft_rule_agreement": 0.9744,
+      "avg_confidence": 0.9126,
+      "avg_evidence_items": 6.0,
+      "symbolic_justification": 0.0
+    },
+    "symbolic": {
+      "accuracy": 0.7456,
+      "precision": 0.6912,
+      "recall": 0.5793,
+      "f1": 0.6102,
+      "per_class": [
+        {
+          "label": "Healthy",
+          "precision": 0.7957,
+          "recall": 0.961,
+          "f1": 0.8706,
+          "support": 770
+        },
+        {
+          "label": "Service Degradation",
+          "precision": 0.2921,
+          "recall": 0.2342,
+          "f1": 0.26,
+          "support": 222
+        },
+        {
+          "label": "Critical Failure Risk",
+          "precision": 0.9859,
+          "recall": 0.5426,
+          "f1": 0.7,
+          "support": 258
+        }
+      ],
+      "confusion_matrix": [
+        [
+          740,
+          30,
+          0
+        ],
+        [
+          168,
+          52,
+          2
+        ],
+        [
+          22,
+          96,
+          140
+        ]
+      ],
+      "name": "Symbolic rules only",
+      "hard_rule_consistency": 1.0,
+      "soft_rule_agreement": 1.0,
+      "avg_confidence": 1.0,
+      "avg_evidence_items": 10.0,
+      "symbolic_justification": 1.0
+    },
+    "hybrid": {
+      "accuracy": 0.892,
+      "precision": 0.8538,
+      "recall": 0.8363,
+      "f1": 0.8445,
+      "per_class": [
+        {
+          "label": "Healthy",
+          "precision": 0.9296,
+          "recall": 0.9597,
+          "f1": 0.9444,
+          "support": 770
+        },
+        {
+          "label": "Service Degradation",
+          "precision": 0.7192,
+          "recall": 0.6577,
+          "f1": 0.6871,
+          "support": 222
+        },
+        {
+          "label": "Critical Failure Risk",
+          "precision": 0.9127,
+          "recall": 0.8915,
+          "f1": 0.902,
+          "support": 258
+        }
+      ],
+      "confusion_matrix": [
+        [
+          739,
+          30,
+          1
+        ],
+        [
+          55,
+          146,
+          21
+        ],
+        [
+          1,
+          27,
+          230
+        ]
+      ],
+      "name": "Hybrid neuro-symbolic",
+      "hard_rule_consistency": 1.0,
+      "soft_rule_agreement": 0.9832,
+      "avg_confidence": 0.868,
+      "avg_evidence_items": 17.0,
+      "symbolic_justification": 1.0,
+      "conflict_rate": 0.1616,
+      "override_rate": 0.0024
+    }
+  },
+  "improvement": {
+    "accuracy": 0.004,
+    "f1": 0.0066,
+    "recall": 0.0048,
+    "hard_rule_consistency": 0.0048
+  }
+}

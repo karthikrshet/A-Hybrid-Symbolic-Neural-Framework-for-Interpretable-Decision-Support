@@ -1,0 +1,177 @@
+{
+  "domain": "fraud_detection",
+  "domain_name": "Cyber Security",
+  "generated_at": "2026-11-07T10:03:50.628857+00:00",
+  "test_samples": 1250,
+  "classes": [
+    "Legitimate",
+    "Suspicious",
+    "Likely Fraud"
+  ],
+  "systems": {
+    "neural": {
+      "accuracy": 0.912,
+      "precision": 0.8261,
+      "recall": 0.7754,
+      "f1": 0.7941,
+      "per_class": [
+        {
+          "label": "Legitimate",
+          "precision": 0.9295,
+          "recall": 0.9686,
+          "f1": 0.9487,
+          "support": 925
+        },
+        {
+          "label": "Suspicious",
+          "precision": 0.5926,
+          "recall": 0.3967,
+          "f1": 0.4752,
+          "support": 121
+        },
+        {
+          "label": "Likely Fraud",
+          "precision": 0.9561,
+          "recall": 0.9608,
+          "f1": 0.9584,
+          "support": 204
+        }
+      ],
+      "confusion_matrix": [
+        [
+          896,
+          29,
+          0
+        ],
+        [
+          64,
+          48,
+          9
+        ],
+        [
+          4,
+          4,
+          196
+        ]
+      ],
+      "name": "Neural network only",
+      "hard_rule_consistency": 1.0,
+      "soft_rule_agreement": 0.908,
+      "avg_confidence": 0.908,
+      "avg_evidence_items": 6.0,
+      "symbolic_justification": 0.0
+    },
+    "symbolic": {
+      "accuracy": 0.7088,
+      "precision": 0.6611,
+      "recall": 0.4743,
+      "f1": 0.4677,
+      "per_class": [
+        {
+          "label": "Legitimate",
+          "precision": 0.8873,
+          "recall": 0.8681,
+          "f1": 0.8776,
+          "support": 925
+        },
+        {
+          "label": "Suspicious",
+          "precision": 0.1447,
+          "recall": 0.3636,
+          "f1": 0.2071,
+          "support": 121
+        },
+        {
+          "label": "Likely Fraud",
+          "precision": 0.9512,
+          "recall": 0.1912,
+          "f1": 0.3184,
+          "support": 204
+        }
+      ],
+      "confusion_matrix": [
+        [
+          803,
+          122,
+          0
+        ],
+        [
+          75,
+          44,
+          2
+        ],
+        [
+          27,
+          138,
+          39
+        ]
+      ],
+      "name": "Symbolic rules only",
+      "hard_rule_consistency": 1.0,
+      "soft_rule_agreement": 1.0,
+      "avg_confidence": 1.0,
+      "avg_evidence_items": 9.0,
+      "symbolic_justification": 1.0
+    },
+    "hybrid": {
+      "accuracy": 0.9056,
+      "precision": 0.8106,
+      "recall": 0.7749,
+      "f1": 0.7895,
+      "per_class": [
+        {
+          "label": "Legitimate",
+          "precision": 0.9278,
+          "recall": 0.9589,
+          "f1": 0.9431,
+          "support": 925
+        },
+        {
+          "label": "Suspicious",
+          "precision": 0.5385,
+          "recall": 0.405,
+          "f1": 0.4623,
+          "support": 121
+        },
+        {
+          "label": "Likely Fraud",
+          "precision": 0.9655,
+          "recall": 0.9608,
+          "f1": 0.9631,
+          "support": 204
+        }
+      ],
+      "confusion_matrix": [
+        [
+          887,
+          38,
+          0
+        ],
+        [
+          65,
+          49,
+          7
+        ],
+        [
+          4,
+          4,
+          196
+        ]
+      ],
+      "name": "Hybrid neuro-symbolic",
+      "hard_rule_consistency": 1.0,
+      "soft_rule_agreement": 0.9184,
+      "avg_confidence": 0.8588,
+      "avg_evidence_items": 16.0,
+      "symbolic_justification": 1.0,
+      "conflict_rate": 0.1368,
+      "override_rate": 0.0
+    }
+  },
+  "improvement": {
+    "accuracy": -0.0064,
+    "f1": -0.0046,
+    "recall": -0.0005,
+    "hard_rule_consistency": 0.0
+  }
+}

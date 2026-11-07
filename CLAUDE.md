@@ -2,8 +2,9 @@
 
 ## Project Overview
 - **Project:** A Hybrid Symbolic-Neural Framework for Interpretable Decision Support
-- **Architecture:** Neuro-Symbolic Multi-Agent Decision Support Platform (FastAPI + Next.js + Scikit-Learn + Deterministic Rule Engine)
-- **Primary Domain Demonstrator:** Financial Transaction Risk & Fraud Decision Support
+- **Architecture:** Multi-domain, multi-agent neuro-symbolic decision-support platform (FastAPI + scikit-learn MLP + deterministic rule engine + Next.js)
+- **Domains:** Healthcare, Finance, Cyber Security (fraud detection), IT Troubleshooting, Education. All share one common engine.
+- **Entry points:** ChatGPT-style assistant (`/chat`), structured Domain Analyzer (`/analyze`), landing page (`/`)
 
 ## Commands & Workflows
 - **Backend Setup & Run:**
@@ -19,9 +20,9 @@
   cd backend
   pytest -v
   ```
-- **Model Training & Evaluation:**
+- **Model Training & Evaluation (from `backend/`):**
   ```bash
-  python ml/training/train_pipeline.py
+  python ml/train_pipeline.py            # add --fresh to regenerate datasets
   python experiments/evaluate_baseline_vs_hybrid.py
   ```
 - **Frontend Setup & Run:**
@@ -32,7 +33,9 @@
   ```
 
 ## Code Guidelines
-- Python: Strict type hinting with Python 3.10+, Pydantic V2 schemas, Ruff/Black formatting standards.
-- TypeScript: Strict typing (no `any`), functional React components, Tailwind CSS with enterprise color palette (Navy/Slate/Clean White).
-- Multi-Agent Contracts: Maintain strict contracts in `ai_engine/contracts/agent_schemas.py`.
-- Decisions & Evidence: Always preserve evidence traceability; link SHAP attributions and triggered rules in every decision object.
+- Python: strict type hints (3.10+), Pydantic V2 schemas, Ruff/Black style.
+- TypeScript: strict typing (no `any`), functional React components, Tailwind CSS, white + blue (`brand-*`) palette, icons from `react-icons/lu`.
+- Agent contracts live in `backend/app/schemas.py`; `frontend/lib/types.ts` mirrors them, so keep both in sync.
+- Domains are configuration: `backend/app/domains/<id>/{config,rules,chat}.py`. Agents must never import a domain directly.
+- Decisions & evidence: every decision object must link neural attributions, triggered/passed rules, fusion rationale, validation checks and the agent trace.
+- Fusion weights are tuned on the training split only; never tune on the test split.

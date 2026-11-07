@@ -1,0 +1,98 @@
+"""IT troubleshooting knowledge base - service-health monitoring rules (SRE style)."""
+
+from app.domains.base import cond, rule
+
+HEALTHY, DEGRADED, CRITICAL = 0, 1, 2
+
+RULES = [
+    rule(
+        "IT-01", "Service health check failing",
+        "The service health endpoint reports Unhealthy.",
+        "Availability",
+        [cond("service_status", "eq", "Unhealthy")],
+        CRITICAL, "hard",
+        "Check the health-check logs and dependent services; consider a controlled restart if diagnostics justify it.",
+        "Service health check passing.",
+    ),
+    rule(
+        "IT-02", "Severe error rate",
+        "Error rate of 20% or more of requests.",
+        "Errors",
+        [cond("error_rate", "gte", 20)],
+        CRITICAL, "hard",
+        "Inspect application/API error logs and recent deployments; consider rolling back.",
+        "Error rate below severe threshold.",
+    ),
+    rule(
+        "IT-03", "Elevated error rate",
+        "Error rate of 5% or more.",
+        "Errors",
+        [cond("error_rate", "gte", 5)],
+        DEGRADED, "soft",
+        "Review error logs for recurring exceptions.",
+        "Error rate below 5%.",
+    ),
+    rule(
+        "IT-04", "High CPU utilisation",
+        "CPU utilisation at or above 90%.",
+        "CPU",
+        [cond("cpu_utilization", "gte", 90)],
+        DEGRADED, "soft",
+        "Inspect high CPU-consuming processes and consider horizontal scaling.",
+        "CPU utilisation below 90%.",
+    ),
+    rule(
+        "IT-05", "Memory pressure",
+        "Memory utilisation at or above 90%.",
+        "Memory",
+        [cond("memory_utilization", "gte", 90)],
+        DEGRADED, "soft",
+        "Analyse memory usage for leaks; review heap/GC metrics.",
+        "Memory utilisation below 90%.",
+    ),
+    rule(
+        "IT-06", "Resource exhaustion",
+        "CPU ≥ 90% and memory ≥ 90% at the same time.",
+        "Capacity",
+        [cond("cpu_utilization", "gte", 90), cond("memory_utilization", "gte", 90)],
+        CRITICAL, "hard",
+        "Both CPU and memory are saturated - scale out immediately and shed non-critical load.",
+        "No simultaneous CPU and memory saturation.",
+    ),
+    rule(
+        "IT-07", "Performance degradation",
+        "API response time at or above 3 seconds.",
+        "Latency",
+        [cond("response_time_ms", "gte", 3000)],
+        DEGRADED, "soft",
+        "Check API logs, slow queries and dependent services.",
+        "API response time below 3 s.",
+    ),
+    rule(
+        "IT-08", "Severe latency",
+        "API response time at or above 8 seconds (timeouts likely).",
+        "Latency",
+        [cond("response_time_ms", "gte", 8000)],
+        CRITICAL, "hard",
+        "Requests are close to timing out - investigate upstream dependencies and connection pools.",
+        "No severe latency.",
+    ),
+    rule(
+        "IT-09", "Disk almost full",
+        "Disk utilisation at or above 95%.",
+        "Storage",
+        [cond("disk_utilization", "gte", 95)],
+        CRITICAL, "hard",
+        "Free disk space (rotate logs, purge temp files) or expand the volume.",
+        "Disk utilisation below 95%.",
+    ),
+    rule(
+        "IT-10", "Crash loop",
+        "Three or more restarts in the last hour.",
+        "Stability",
+        [cond("restarts_last_hour", "gte", 3)],
+        DEGRADED, "soft",
+        "Inspect crash logs / OOM-kill events behind repeated restarts.",
+        "Fewer than three restarts in the last hour.",
+    ),
+]

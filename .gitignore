@@ -31,3 +31,9 @@ out/
 .DS_Store
 *.db
 *.sqlite3
+
+# NeuroSymbolic AI - generated artefacts (recreated automatically on first start)
+backend/data/
+backend/app/domains/*/model/
+backend/datasets/*.csv
+.claude/settings.local.json
